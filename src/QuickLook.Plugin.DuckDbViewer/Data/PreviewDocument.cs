@@ -51,26 +51,26 @@ internal sealed class PreviewDocument : IDisposable
 
     public IReadOnlyList<ColumnInfo> GetColumns(DataObject source, CancellationToken cancellationToken = default)
     {
-        return _handler.DescribeColumns(_session, source, cancellationToken);
+        return Run(() => _handler.DescribeColumns(_session, source, cancellationToken));
     }
 
     public long CountRows(DataObject source, RowQuery query, CancellationToken cancellationToken = default)
     {
-        return TableReader.CountRows(_session, source, query, cancellationToken);
+        return Run(() => TableReader.CountRows(_session, source, query, cancellationToken));
     }
 
     public IReadOnlyList<string?[]> ReadPage(DataObject source, RowQuery query, long offset, int limit,
         CancellationToken cancellationToken = default)
     {
-        return TableReader.ReadPage(_session, source, query, _handler.ReadsRowsAsText, offset, limit,
-            cancellationToken);
+        return Run(() => TableReader.ReadPage(_session, source, query, _handler.ReadsRowsAsText, offset, limit,
+            cancellationToken));
     }
 
     /// <summary>The most frequent values of a column, for building a filter.</summary>
     public ColumnValues GetDistinctValues(DataObject source, string column, RowQuery query,
         CancellationToken cancellationToken = default)
     {
-        return TableReader.DistinctValues(_session, source, column, query, cancellationToken);
+        return Run(() => TableReader.DistinctValues(_session, source, column, query, cancellationToken));
     }
 
     /// <summary>
@@ -82,12 +82,32 @@ internal sealed class PreviewDocument : IDisposable
     {
         try
         {
-            TableReader.Export(_session, source, query, _handler.ReadsRowsAsText, path, format, cancellationToken);
+            Run(() =>
+            {
+                TableReader.Export(_session, source, query, _handler.ReadsRowsAsText, path, format,
+                    cancellationToken);
+                return true;
+            });
         }
         catch
         {
             TryDelete(path);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs an engine call and lets the format replace engine errors it knows how to explain.
+    /// </summary>
+    private T Run<T>(Func<T> call)
+    {
+        try
+        {
+            return call();
+        }
+        catch (DuckDB.NET.Data.DuckDBException e) when (_handler.ExplainError(e.Message) is { } explanation)
+        {
+            throw new InvalidDataException(explanation, e);
         }
     }
 

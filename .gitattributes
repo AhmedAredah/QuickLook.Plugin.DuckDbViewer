@@ -3,3 +3,7 @@
 *.xaml text eol=lf
 *.ps1 text eol=crlf
 *.png binary
+*.avro binary
+*.arrow binary
+*.arrows binary
+*.feather binary

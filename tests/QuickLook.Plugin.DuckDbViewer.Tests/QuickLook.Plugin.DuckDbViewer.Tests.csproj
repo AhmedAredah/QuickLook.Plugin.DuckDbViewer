@@ -19,6 +19,8 @@
   <ItemGroup>
     <!-- Shadow copying is off so the plugin finds the native engine and extensions next to its assembly. -->
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Sample files written by other implementations; see Fixtures\generate.py. -->
+    <None Include="Fixtures\*" Exclude="Fixtures\*.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

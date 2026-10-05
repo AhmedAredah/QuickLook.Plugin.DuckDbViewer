@@ -10,14 +10,15 @@
     Version to stamp into the assembly and the plugin metadata. Defaults to the version in
     Directory.Build.props.
 
-.PARAMETER NoSqliteExtension
-    Leaves the SQLite extension (~48 MB) out of the package. The plugin then downloads it
-    from the official DuckDB extension repository the first time a SQLite file is previewed.
+.PARAMETER Lite
+    Leaves the DuckDB extensions (SQLite, Avro, Arrow) out of the package. The plugin then
+    downloads each from the official DuckDB extension repositories the first time a file of
+    that format is previewed.
 #>
 [CmdletBinding()]
 param(
     [string] $Version,
-    [switch] $NoSqliteExtension
+    [switch] $Lite
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,7 +37,7 @@ foreach ($dir in $buildOutput, $staging) {
 
 $buildArgs = @('build', $project, '-c', 'Release', '--nologo', '-v', 'q')
 if ($Version) { $buildArgs += "-p:Version=$Version" }
-if ($NoSqliteExtension) { $buildArgs += '-p:BundleSqliteExtension=false' }
+if ($Lite) { $buildArgs += '-p:BundleExtensions=false' }
 dotnet @buildArgs
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
@@ -45,7 +46,7 @@ Copy-Item (Join-Path $buildOutput '*') $staging -Recurse -Exclude '*.pdb'
 
 $metadata = [xml](Get-Content (Join-Path $staging 'QuickLook.Plugin.Metadata.config'))
 $packageVersion = $metadata.Metadata.Version
-$suffix = if ($NoSqliteExtension) { '-lite' } else { '' }
+$suffix = if ($Lite) { '-lite' } else { '' }
 $package = Join-Path $artifacts "$pluginName-$packageVersion$suffix.qlplugin"
 
 if (Test-Path $package) { Remove-Item $package -Force }

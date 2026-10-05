@@ -18,6 +18,8 @@ internal abstract class FormatHandler
         FileFormat.Parquet => new ParquetFormat(),
         FileFormat.DuckDb => new DuckDbFormat(),
         FileFormat.Sqlite => new SqliteFormat(),
+        FileFormat.Avro => new AvroFormat(),
+        FileFormat.Arrow => new ArrowFormat(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "No handler for this format."),
     };
 
@@ -26,6 +28,12 @@ internal abstract class FormatHandler
     /// Sorting then has to restore numeric order itself.
     /// </summary>
     public virtual bool ReadsRowsAsText => false;
+
+    /// <summary>
+    /// Translates an engine error that users of this format commonly run into. Returns
+    /// <c>null</c> to show the engine's own message.
+    /// </summary>
+    public virtual string? ExplainError(string message) => null;
 
     /// <summary>Makes the file readable in <paramref name="session"/> and lists its objects.</summary>
     public abstract IReadOnlyList<DataObject> Open(DuckSession session, string path,

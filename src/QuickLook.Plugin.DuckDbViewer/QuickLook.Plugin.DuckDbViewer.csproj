@@ -13,7 +13,7 @@
     <AssemblyName>QuickLook.Plugin.DuckDbViewer</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <BundleSqliteExtension Condition="'$(BundleSqliteExtension)' == ''">true</BundleSqliteExtension>
+    <BundleExtensions Condition="'$(BundleExtensions)' == ''">true</BundleExtensions>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,8 +35,16 @@
     <None Update="Translations.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BundleSqliteExtension)' == 'true'">
-    <None Include="$(ExtensionCacheDir)sqlite_scanner.duckdb_extension" Link="extensions\sqlite_scanner.duckdb_extension" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  <!--
+    DuckDB extensions shipped with the plugin so that every format works offline. Keep this
+    list in sync with Formats\DuckExtension.cs. "Repository" is DuckDB's core or community
+    extension repository.
+  -->
+  <ItemGroup Condition="'$(BundleExtensions)' == 'true'">
+    <BundledExtension Include="sqlite_scanner" Repository="core" />
+    <BundledExtension Include="avro" Repository="core" />
+    <BundledExtension Include="nanoarrow" Repository="community" />
+    <None Include="@(BundledExtension->'$(ExtensionCacheDir)%(Identity).duckdb_extension')" Link="extensions\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,8 +53,11 @@
   </ItemGroup>
 
   <!-- Download the DuckDB extensions that are bundled with the plugin (cached under artifacts\). -->
-  <Target Name="FetchDuckDbExtensions" BeforeTargets="AssignTargetPaths" Condition="'$(BundleSqliteExtension)' == 'true' And !Exists('$(ExtensionCacheDir)sqlite_scanner.duckdb_extension')">
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepoRoot)scripts\fetch-extensions.ps1&quot; -DuckDbVersion $(DuckDbVersion)" />
+  <Target Name="FetchDuckDbExtensions" BeforeTargets="AssignTargetPaths" Condition="'$(BundleExtensions)' == 'true'">
+    <ItemGroup>
+      <MissingExtension Include="@(BundledExtension)" Condition="!Exists('$(ExtensionCacheDir)%(Identity).duckdb_extension')" />
+    </ItemGroup>
+    <Exec Condition="'@(MissingExtension)' != ''" Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepoRoot)scripts\fetch-extensions.ps1&quot; -DuckDbVersion $(DuckDbVersion) -Extensions &quot;@(MissingExtension->'%(Identity):%(Repository)', ',')&quot;" />
   </Target>
 
   <!-- QuickLook's plugin installer reads this file from the root of the .qlplugin archive. -->
@@ -56,7 +67,7 @@
 <Metadata>
   <Namespace>$(AssemblyName)</Namespace>
   <Version>$(Version)</Version>
-  <Description>Preview Parquet, DuckDB and SQLite files. Powered by DuckDB $(DuckDbVersion).</Description>
+  <Description>Preview Parquet, DuckDB, SQLite, Avro and Arrow/Feather files. Powered by DuckDB $(DuckDbVersion).</Description>
 </Metadata>]]></PluginMetadata>
     </PropertyGroup>
     <WriteLinesToFile File="$(OutDir)QuickLook.Plugin.Metadata.config" Lines="$(PluginMetadata)" Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />

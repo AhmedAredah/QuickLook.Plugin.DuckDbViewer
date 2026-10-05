@@ -10,6 +10,14 @@ All notable changes to this project are documented here. The format follows
 
 - SQLite-based files with other extensions: GeoPackage (`.gpkg`), MBTiles (`.mbtiles`),
   `.s3db`, `.sl3` and `.sqlitedb`.
+- Preview of Avro files (`.avro`).
+- Preview of Arrow IPC files and streams and Feather version 2 files (`.arrow`, `.arrows`,
+  `.feather`, `.ipc`), uncompressed or ZSTD-compressed.
+
+### Changed
+
+- The full package now bundles the Avro and Arrow extensions as well and is about 55 MB.
+  The lite package contains no extensions and downloads each on first use.
 
 ## [0.1.0] - 2026-10-05
 

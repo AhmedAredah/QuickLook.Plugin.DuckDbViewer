@@ -26,7 +26,7 @@ jobs:
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
           ./scripts/pack.ps1 -Version $version
-          ./scripts/pack.ps1 -Version $version -NoSqliteExtension
+          ./scripts/pack.ps1 -Version $version -Lite
 
       - name: Publish
         shell: pwsh

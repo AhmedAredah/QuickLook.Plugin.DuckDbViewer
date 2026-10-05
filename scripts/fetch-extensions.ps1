@@ -3,7 +3,7 @@
     Downloads the DuckDB extensions that are bundled with the plugin.
 
 .DESCRIPTION
-    Extensions are fetched from the official DuckDB extension repository and cached under
+    Extensions are fetched from the official DuckDB extension repositories and cached under
     artifacts\extensions\. The build runs this automatically when the cache is empty.
     Extension binaries are tied to an exact DuckDB version, so the version must match the
     engine shipped by DuckDB.NET (see DuckDbVersion in Directory.Build.props).
@@ -12,8 +12,14 @@
 param(
     [Parameter(Mandatory)] [string] $DuckDbVersion,
     [string] $Platform = 'windows_amd64',
-    [string[]] $Extensions = @('sqlite_scanner')
+    # Comma-separated "name:repository" pairs; the repository is "core" or "community".
+    [string] $Extensions = 'sqlite_scanner:core,avro:core,nanoarrow:community'
 )
+
+$repositories = @{
+    core      = 'http://extensions.duckdb.org'
+    community = 'http://community-extensions.duckdb.org'
+}
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -21,14 +27,16 @@ $ProgressPreference = 'SilentlyContinue'
 $targetDir = Join-Path $PSScriptRoot "..\artifacts\extensions\v$DuckDbVersion\$Platform"
 New-Item -ItemType Directory -Force $targetDir | Out-Null
 
-foreach ($name in $Extensions) {
+foreach ($entry in $Extensions.Split(',')) {
+    $name, $repository = $entry.Trim().Split(':')
+    if (-not $repositories.ContainsKey($repository)) { throw "Unknown extension repository '$repository' for '$name'." }
     $target = Join-Path $targetDir "$name.duckdb_extension"
     if (Test-Path $target) {
         Write-Host "$name already cached."
         continue
     }
 
-    $url = "http://extensions.duckdb.org/v$DuckDbVersion/$Platform/$name.duckdb_extension.gz"
+    $url = "$($repositories[$repository])/v$DuckDbVersion/$Platform/$name.duckdb_extension.gz"
     $archive = "$target.gz"
     Write-Host "Downloading $url"
     Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing

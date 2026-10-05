@@ -731,6 +731,8 @@ internal sealed class ViewerViewModel : ObservableObject, IDisposable
         FileFormat.Parquet => "Parquet",
         FileFormat.DuckDb => "DuckDB",
         FileFormat.Sqlite => "SQLite",
+        FileFormat.Avro => "Avro",
+        FileFormat.Arrow => "Arrow",
         _ => string.Empty,
     };
 

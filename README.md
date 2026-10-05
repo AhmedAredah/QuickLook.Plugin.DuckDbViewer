@@ -1,7 +1,7 @@
 # QuickLook.Plugin.DuckDbViewer
 
 A [QuickLook](https://github.com/QL-Win/QuickLook) plugin that previews data files with the
-spacebar: **Parquet**, **DuckDB** and **SQLite**. It is powered by an embedded
+spacebar: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**. It is powered by an embedded
 [DuckDB](https://duckdb.org/) engine, so one code path serves every format.
 
 ![A DuckDB database in dark mode](docs/images/duckdb-dark.png)
@@ -26,6 +26,9 @@ spacebar: **Parquet**, **DuckDB** and **SQLite**. It is powered by an embedded
 | DuckDB | `.duckdb`, `.ddb`, `.db` | All schemas, tables and views |
 | SQLite | `.sqlite`, `.sqlite3`, `.db3`, `.s3db`, `.sl3`, `.sqlitedb`, `.db` | Unencrypted databases |
 | SQLite-based formats | `.gpkg` (GeoPackage), `.mbtiles` (MBTiles) | Shown as their underlying tables; geometry and tile columns appear as binary |
+
+| Avro | `.avro` | Uncompressed, deflate and snappy codecs |
+| Arrow / Feather | `.arrow`, `.arrows`, `.feather`, `.ipc` | Arrow IPC files and streams, Feather version 2; uncompressed or ZSTD (see Limitations) |
 
 The extension only decides which files are inspected; the format itself is detected from
 the file's contents, so a `.db` file is opened correctly whichever engine wrote it.
@@ -53,10 +56,10 @@ the file's contents, so a `.db` file is opened correctly whichever engine wrote 
 
 Two packages are published:
 
-| Package | Size | SQLite support |
+| Package | Size | Contents |
 |---|---|---|
-| `QuickLook.Plugin.DuckDbViewer-x.y.z.qlplugin` | larger | Built in |
-| `QuickLook.Plugin.DuckDbViewer-x.y.z-lite.qlplugin` | smaller | Downloads DuckDB's SQLite extension once, on first use |
+| `QuickLook.Plugin.DuckDbViewer-x.y.z.qlplugin` | about 55 MB | Everything built in; works offline |
+| `QuickLook.Plugin.DuckDbViewer-x.y.z-lite.qlplugin` | about 12 MB | Parquet and DuckDB built in. The DuckDB extensions for SQLite, Avro and Arrow are each downloaded once, the first time a file of that format is previewed |
 
 Requirements: QuickLook 4.5 or later on 64-bit Windows with .NET Framework 4.7.2 or later
 (included in Windows 10 1803 and newer).
@@ -67,6 +70,10 @@ Requirements: QuickLook 4.5 or later on 64-bit Windows with .NET Framework 4.7.2
   host. Database files written by a newer DuckDB with a newer storage format may not open;
   the preview then shows DuckDB's error message.
 - Encrypted SQLite databases are not supported.
+- **Feather files compressed with LZ4 cannot be read.** LZ4 is the default of pandas and
+  pyarrow (`to_feather`), so many Feather files are affected; the preview says so instead
+  of showing data. Files written uncompressed or with `compression="zstd"` work. Feather
+  version 1 files are not supported either.
 - Values are displayed as text exactly as DuckDB renders them, and filters match that text
   (its first 200 characters). There is no free-text search and no SQL input: both would
   need the <kbd>Space</kbd> key, which QuickLook reserves for closing the preview.
@@ -84,7 +91,7 @@ dotnet test                    # build everything and run the tests
 ./scripts/install-dev.ps1      # build, install into the local QuickLook and restart it
 ```
 
-The first build downloads the SQLite extension for the pinned DuckDB version into
+The first build downloads the DuckDB extensions for the pinned DuckDB version into
 `artifacts\extensions\` (see `scripts/fetch-extensions.ps1`).
 
 ### Working on the UI without QuickLook
@@ -126,8 +133,11 @@ only through `Data/PreviewDocument`.
    magic bytes.
 2. Add a `Formats/FormatHandler` subclass that makes the file readable in DuckDB and
    returns its `DataObject`s. Derive from `AttachedDatabaseFormat` if DuckDB can `ATTACH`
-   the format, otherwise return a table function call as `ParquetFormat` does.
-3. Register it in `FormatHandler.For` and add a sample to `tests/SampleFiles.cs`.
+   the format, or from `TableFileFormat` if a table function such as `read_parquet` reads
+   it (`AvroFormat` is four lines).
+3. If the format needs a DuckDB extension, add it to `Formats/DuckExtension` and to the
+   `BundledExtension` items in the project file.
+4. Register it in `FormatHandler.For` and add a sample to the tests.
 
 Schema, row counts, paging, sorting, filtering, export and the whole UI then work without further changes.
 

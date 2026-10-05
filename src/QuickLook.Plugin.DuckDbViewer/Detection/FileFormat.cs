@@ -6,4 +6,6 @@ internal enum FileFormat
     Parquet,
     DuckDb,
     Sqlite,
+    Avro,
+    Arrow,
 }
