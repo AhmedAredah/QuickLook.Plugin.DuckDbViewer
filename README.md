@@ -5,9 +5,9 @@ and as a preview handler for **File Explorer's preview pane** and
 **[PowerToys Peek](https://learn.microsoft.com/windows/powertoys/peek)**. Both show the same
 viewer.
 
-It previews data files with the
-spacebar: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**. It is powered by an embedded
-[DuckDB](https://duckdb.org/) engine, so one code path serves every format.
+Supported formats: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**.
+It is powered by an embedded [DuckDB](https://duckdb.org/) engine, so one code path serves
+every format.
 
 ![A DuckDB database in dark mode](docs/images/duckdb-dark.png)
 
