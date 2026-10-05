@@ -1,64 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- The QuickLook plugin: a thin host around DuckDbViewer.Core. -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <!--
-      QuickLook itself targets net462, but DuckDB.NET is netstandard2.0. Targeting net472
-      (the first framework with built-in netstandard2.0 support) keeps ~100 facade DLLs
-      out of the plugin folder.
-    -->
+    <!-- QuickLook itself targets net462; net472 is the first framework with netstandard2.0 built in. -->
     <TargetFramework>net472</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- QuickLook requires plugin assemblies to be named QuickLook.Plugin.*. -->
     <RootNamespace>QuickLook.Plugin.DuckDbViewer</RootNamespace>
     <AssemblyName>QuickLook.Plugin.DuckDbViewer</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <BundleExtensions Condition="'$(BundleExtensions)' == ''">true</BundleExtensions>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Provided by the QuickLook host at runtime; compile against it but never ship it. -->
     <PackageReference Include="QuickLook.Common" Version="$(QuickLookCommonVersion)" ExcludeAssets="runtime" />
-
-    <PackageReference Include="DuckDB.NET.Data.Full" Version="$(DuckDbVersion)" />
-    <!--
-      The bindings package carries native libraries for every OS (~300 MB). Exclude them
-      and copy only the Windows x64 engine below.
-    -->
-    <PackageReference Include="DuckDB.NET.Bindings.Full" Version="$(DuckDbVersion)" ExcludeAssets="native" GeneratePathProperty="true" />
+    <ProjectReference Include="..\DuckDbViewer.Core\DuckDbViewer.Core.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="$(PkgDuckDB_NET_Bindings_Full)\runtimes\win-x64\native\duckdb.dll" Link="duckdb.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-    <None Include="$(PkgDuckDB_NET_Bindings_Full)\LICENSE-DuckDB.txt" Link="licenses\DuckDB.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-    <None Include="$(PkgDuckDB_NET_Bindings_Full)\LICENSE.md" Link="licenses\DuckDB.NET.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-    <None Update="Translations.config" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <!--
-    DuckDB extensions shipped with the plugin so that every format works offline. Keep this
-    list in sync with Formats\DuckExtension.cs. "Repository" is DuckDB's core or community
-    extension repository.
-  -->
-  <ItemGroup Condition="'$(BundleExtensions)' == 'true'">
-    <BundledExtension Include="sqlite_scanner" Repository="core" />
-    <BundledExtension Include="avro" Repository="core" />
-    <BundledExtension Include="nanoarrow" Repository="community" />
-    <None Include="@(BundledExtension->'$(ExtensionCacheDir)%(Identity).duckdb_extension')" Link="extensions\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="QuickLook.Plugin.DuckDbViewer.Tests" />
-    <InternalsVisibleTo Include="DuckDbViewer.DevHost" />
-  </ItemGroup>
-
-  <!-- Download the DuckDB extensions that are bundled with the plugin (cached under artifacts\). -->
-  <Target Name="FetchDuckDbExtensions" BeforeTargets="AssignTargetPaths" Condition="'$(BundleExtensions)' == 'true'">
-    <ItemGroup>
-      <MissingExtension Include="@(BundledExtension)" Condition="!Exists('$(ExtensionCacheDir)%(Identity).duckdb_extension')" />
-    </ItemGroup>
-    <Exec Condition="'@(MissingExtension)' != ''" Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepoRoot)scripts\fetch-extensions.ps1&quot; -DuckDbVersion $(DuckDbVersion) -Extensions &quot;@(MissingExtension->'%(Identity):%(Repository)', ',')&quot;" />
-  </Target>
 
   <!-- QuickLook's plugin installer reads this file from the root of the .qlplugin archive. -->
   <Target Name="WritePluginMetadata" AfterTargets="Build">

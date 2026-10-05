@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Everything that does not depend on a particular host: format detection, the DuckDB data
+    layer, the view models and the preview panel. It is built twice because its hosts run on
+    different runtimes: QuickLook on .NET Framework, the preview handler on modern .NET.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net472;net8.0-windows</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>DuckDbViewer</RootNamespace>
+    <AssemblyName>DuckDbViewer.Core</AssemblyName>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <IsPackable>false</IsPackable>
+    <BundleExtensions Condition="'$(BundleExtensions)' == ''">true</BundleExtensions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DuckDB.NET.Data.Full" Version="$(DuckDbVersion)" />
+  </ItemGroup>
+
+  <!--
+    The bindings package carries native libraries for every OS (~300 MB). A .NET Framework
+    build would copy all of them, so exclude them there and copy only the Windows x64 engine.
+    Modern .NET picks the right one itself from the runtime identifier of the application.
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="DuckDB.NET.Bindings.Full" Version="$(DuckDbVersion)" ExcludeAssets="native" GeneratePathProperty="true" />
+    <None Include="$(PkgDuckDB_NET_Bindings_Full)\runtimes\win-x64\native\duckdb.dll" Link="duckdb.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DuckDB.NET.Bindings.Full" Version="$(DuckDbVersion)" GeneratePathProperty="true" Condition="'$(TargetFramework)' != 'net472'" />
+    <None Include="$(PkgDuckDB_NET_Bindings_Full)\LICENSE-DuckDB.txt" Link="licenses\DuckDB.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(PkgDuckDB_NET_Bindings_Full)\LICENSE.md" Link="licenses\DuckDB.NET.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Update="Translations.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    DuckDB extensions shipped with the viewer so that every format works offline. Keep this
+    list in sync with Formats\DuckExtension.cs. "Repository" is DuckDB's core or community
+    extension repository.
+  -->
+  <ItemGroup Condition="'$(BundleExtensions)' == 'true'">
+    <BundledExtension Include="sqlite_scanner" Repository="core" />
+    <BundledExtension Include="avro" Repository="core" />
+    <BundledExtension Include="nanoarrow" Repository="community" />
+    <None Include="@(BundledExtension->'$(ExtensionCacheDir)%(Identity).duckdb_extension')" Link="extensions\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DuckDbViewer.Tests" />
+    <InternalsVisibleTo Include="DuckDbViewer.DevHost" />
+    <InternalsVisibleTo Include="DuckDbViewer.PreviewHandler" />
+    <InternalsVisibleTo Include="QuickLook.Plugin.DuckDbViewer" />
+  </ItemGroup>
+
+  <!-- Download the bundled DuckDB extensions (cached under artifacts\). -->
+  <Target Name="FetchDuckDbExtensions" BeforeTargets="AssignTargetPaths" Condition="'$(BundleExtensions)' == 'true'">
+    <ItemGroup>
+      <MissingExtension Include="@(BundledExtension)" Condition="!Exists('$(ExtensionCacheDir)%(Identity).duckdb_extension')" />
+    </ItemGroup>
+    <Exec Condition="'@(MissingExtension)' != ''" Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepoRoot)scripts\fetch-extensions.ps1&quot; -DuckDbVersion $(DuckDbVersion) -Extensions &quot;@(MissingExtension->'%(Identity):%(Repository)', ',')&quot;" />
+  </Target>
+
+</Project>

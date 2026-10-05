@@ -27,6 +27,11 @@ $ProgressPreference = 'SilentlyContinue'
 $targetDir = Join-Path $PSScriptRoot "..\artifacts\extensions\v$DuckDbVersion\$Platform"
 New-Item -ItemType Directory -Force $targetDir | Out-Null
 
+# The build may run this for several target frameworks at once; download one at a time.
+$lock = New-Object System.Threading.Mutex($false, 'DuckDbViewer.FetchExtensions')
+[void]$lock.WaitOne()
+try {
+
 foreach ($entry in $Extensions.Split(',')) {
     $name, $repository = $entry.Trim().Split(':')
     if (-not $repositories.ContainsKey($repository)) { throw "Unknown extension repository '$repository' for '$name'." }
@@ -52,4 +57,9 @@ foreach ($entry in $Extensions.Split(',')) {
     Move-Item "$target.tmp" $target -Force
     Remove-Item $archive -Force
     Write-Host "Cached $target"
+}
+
+} finally {
+    $lock.ReleaseMutex()
+    $lock.Dispose()
 }

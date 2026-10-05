@@ -7,9 +7,9 @@ using QuickLook.Common.Controls;
 using QuickLook.Common.Helpers;
 using QuickLook.Common.Plugin;
 using QuickLook.Common.Plugin.MoreMenu;
-using QuickLook.Plugin.DuckDbViewer.Detection;
+using DuckDbViewer.Detection;
+using DuckDbViewer.Views;
 using QuickLook.Plugin.DuckDbViewer.Native;
-using QuickLook.Plugin.DuckDbViewer.Views;
 
 namespace QuickLook.Plugin.DuckDbViewer;
 

@@ -16,8 +16,8 @@ namespace QuickLook.Plugin.DuckDbViewer.Native;
 /// <item>managed dependencies whose shipped version differs from the referenced one;</item>
 /// <item>the native DuckDB engine, which is not on the host's DLL search path.</item>
 /// </list>
-/// Nothing in here may reference a DuckDB.NET type, otherwise the runtime would try to resolve
-/// those assemblies before the resolver is installed.
+/// Nothing in here may reference a type of DuckDbViewer.Core or DuckDB.NET, otherwise the
+/// runtime would try to resolve those assemblies before the resolver is installed.
 /// </remarks>
 internal static class PluginEnvironment
 {
