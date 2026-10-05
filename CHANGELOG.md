@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- SQLite-based files with other extensions: GeoPackage (`.gpkg`), MBTiles (`.mbtiles`),
+  `.s3db`, `.sl3` and `.sqlitedb`.
+
 ## [0.1.0] - 2026-10-05
 
 ### Added

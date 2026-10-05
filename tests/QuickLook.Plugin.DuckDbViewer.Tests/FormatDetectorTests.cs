@@ -26,6 +26,22 @@ public sealed class FormatDetectorTests : IClassFixture<SampleFiles>
         Assert.Equal(FileFormat.DuckDb, FormatDetector.Detect(_files.CopyAs(_files.DuckDb, "from-duckdb.db")));
     }
 
+    [Theory]
+    [InlineData("layers.gpkg")]
+    [InlineData("tiles.mbtiles")]
+    [InlineData("legacy.s3db")]
+    [InlineData("legacy.sl3")]
+    [InlineData("app.sqlitedb")]
+    public void Sqlite_based_application_formats_are_recognised(string fileName)
+    {
+        var path = _files.CopyAs(_files.Sqlite, fileName);
+
+        Assert.Equal(FileFormat.Sqlite, FormatDetector.Detect(path));
+
+        using var document = QuickLook.Plugin.DuckDbViewer.Data.PreviewDocument.Open(path);
+        Assert.Contains(document.Objects, o => o.DisplayName == "people");
+    }
+
     [Fact]
     public void Extension_matching_ignores_case()
     {

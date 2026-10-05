@@ -24,7 +24,8 @@ spacebar: **Parquet**, **DuckDB** and **SQLite**. It is powered by an embedded
 |---|---|---|
 | Parquet | `.parquet`, `.parq` | |
 | DuckDB | `.duckdb`, `.ddb`, `.db` | All schemas, tables and views |
-| SQLite | `.sqlite`, `.sqlite3`, `.db3`, `.db` | Unencrypted databases |
+| SQLite | `.sqlite`, `.sqlite3`, `.db3`, `.s3db`, `.sl3`, `.sqlitedb`, `.db` | Unencrypted databases |
+| SQLite-based formats | `.gpkg` (GeoPackage), `.mbtiles` (MBTiles) | Shown as their underlying tables; geometry and tile columns appear as binary |
 
 The extension only decides which files are inspected; the format itself is detected from
 the file's contents, so a `.db` file is opened correctly whichever engine wrote it.

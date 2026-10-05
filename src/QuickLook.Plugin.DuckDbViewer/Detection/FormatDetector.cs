@@ -18,8 +18,12 @@ internal static class FormatDetector
     {
         ".parquet", ".parq",
         ".duckdb", ".ddb",
-        ".sqlite", ".sqlite3", ".db3",
+        ".sqlite", ".sqlite3", ".db3", ".s3db", ".sl3", ".sqlitedb",
         ".db",
+
+        // Application formats that are SQLite databases underneath.
+        ".gpkg",    // OGC GeoPackage
+        ".mbtiles", // Mapbox tile sets
     };
 
     private static readonly byte[] ParquetMagic = Encoding.ASCII.GetBytes("PAR1");
