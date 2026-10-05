@@ -26,7 +26,6 @@ spacebar: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**.
 | DuckDB | `.duckdb`, `.ddb`, `.db` | All schemas, tables and views |
 | SQLite | `.sqlite`, `.sqlite3`, `.db3`, `.s3db`, `.sl3`, `.sqlitedb`, `.db` | Unencrypted databases |
 | SQLite-based formats | `.gpkg` (GeoPackage), `.mbtiles` (MBTiles) | Shown as their underlying tables; geometry and tile columns appear as binary |
-
 | Avro | `.avro` | Uncompressed, deflate and snappy codecs |
 | Arrow / Feather | `.arrow`, `.arrows`, `.feather`, `.ipc` | Arrow IPC files and streams, Feather version 2; uncompressed or ZSTD (see Limitations) |
 
