@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Test
+        run: dotnet test QuickLook.Plugin.DuckDbViewer.sln -c Release --nologo
+
+      - name: Package
+        shell: pwsh
+        run: ./scripts/pack.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qlplugin
+          path: artifacts/*.qlplugin
+          if-no-files-found: error

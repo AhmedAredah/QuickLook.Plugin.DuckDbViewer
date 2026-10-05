@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A small window that hosts the preview panel outside QuickLook, for working on the UI
+    without reinstalling the plugin. Not part of the shipped plugin.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>DuckDbViewer.DevHost</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Supplies QuickLook's theme resources and helpers, which the real host provides at runtime. -->
+    <PackageReference Include="QuickLook.Common" Version="$(QuickLookCommonVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\QuickLook.Plugin.DuckDbViewer\QuickLook.Plugin.DuckDbViewer.csproj" />
+  </ItemGroup>
+
+</Project>

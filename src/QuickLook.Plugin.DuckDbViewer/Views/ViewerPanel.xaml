@@ -1,0 +1,228 @@
+<UserControl x:Class="QuickLook.Plugin.DuckDbViewer.Views.ViewerPanel"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:QuickLook.Plugin.DuckDbViewer.Localization"
+             FontSize="12.5"
+             Foreground="{DynamicResource WindowTextForeground}">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+            <!-- Column header of the data grid: name over type. Data context: ColumnInfo. -->
+            <DataTemplate x:Key="ColumnHeaderTemplate">
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                    <TextBlock FontSize="10.5"
+                               Foreground="{StaticResource Viewer.Muted}"
+                               Text="{Binding Type}" />
+                </StackPanel>
+            </DataTemplate>
+
+            <DataTemplate x:Key="PlainHeaderTemplate">
+                <TextBlock FontWeight="SemiBold" Text="{Binding}" />
+            </DataTemplate>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Tables and views of a database -->
+        <Border Grid.Column="0"
+                Width="220"
+                BorderBrush="{StaticResource Viewer.Divider}"
+                BorderThickness="0,0,1,0"
+                Visibility="{Binding HasObjectList, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <TextBlock Margin="14,12,12,8"
+                           DockPanel.Dock="Top"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource Viewer.Muted}"
+                           Text="{l:Text Sidebar_Title}" />
+                <ListBox ItemContainerStyle="{StaticResource Viewer.ObjectItem}"
+                         ItemsSource="{Binding Objects}"
+                         SelectedItem="{Binding SelectedObject}"
+                         Style="{StaticResource Viewer.ObjectList}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <TextBlock Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           DockPanel.Dock="Right"
+                                           FontSize="10.5"
+                                           Foreground="{StaticResource Viewer.Muted}"
+                                           Text="{l:Text Kind_View}"
+                                           Visibility="{Binding IsView, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="{Binding DisplayName}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding DisplayName}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Tabs and summary -->
+            <Border Grid.Row="0"
+                    Height="36"
+                    BorderBrush="{StaticResource Viewer.Divider}"
+                    BorderThickness="0,0,0,1"
+                    Visibility="{Binding HasContent, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel Margin="4,0,12,0">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                        <RadioButton Content="{l:Text Tab_Data}"
+                                     IsChecked="{Binding IsDataVisible}"
+                                     Style="{StaticResource Viewer.Tab}" />
+                        <RadioButton Content="{l:Text Tab_Schema}"
+                                     IsChecked="{Binding IsSchemaVisible}"
+                                     Style="{StaticResource Viewer.Tab}" />
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center"
+                                   Foreground="{DynamicResource WindowTextForegroundAlternative}"
+                                   Text="{Binding SummaryText}" />
+                        <Border Margin="10,0,0,0"
+                                Padding="7,2"
+                                Background="{StaticResource Viewer.Hover}"
+                                CornerRadius="4">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding FormatName}" />
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Rows -->
+            <DataGrid x:Name="dataGrid"
+                      Grid.Row="1"
+                      HeadersVisibility="All"
+                      ItemsSource="{Binding Rows}"
+                      LoadingRow="DataGrid_LoadingRow"
+                      Style="{StaticResource Viewer.Grid}"
+                      Visibility="{Binding ShowDataGrid, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Schema -->
+            <DataGrid Grid.Row="1"
+                      HeadersVisibility="Column"
+                      ItemsSource="{Binding SchemaRows}"
+                      Style="{StaticResource Viewer.Grid}"
+                      Visibility="{Binding ShowSchemaGrid, Converter={StaticResource BoolToVisibility}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Width="56"
+                                        Binding="{Binding Position}"
+                                        ElementStyle="{StaticResource Viewer.NumericCellText}"
+                                        Header="#"
+                                        HeaderStyle="{StaticResource Viewer.NumericColumnHeader}"
+                                        HeaderTemplate="{StaticResource PlainHeaderTemplate}" />
+                    <DataGridTextColumn Width="2*"
+                                        Binding="{Binding Name}"
+                                        ElementStyle="{StaticResource Viewer.CellText}"
+                                        Header="{l:Text Schema_Column}"
+                                        HeaderTemplate="{StaticResource PlainHeaderTemplate}" />
+                    <DataGridTextColumn Width="3*"
+                                        Binding="{Binding Type}"
+                                        ElementStyle="{StaticResource Viewer.CellText}"
+                                        Header="{l:Text Schema_Type}"
+                                        HeaderTemplate="{StaticResource PlainHeaderTemplate}" />
+                    <DataGridTextColumn Width="*"
+                                        Binding="{Binding Nullable}"
+                                        ElementStyle="{StaticResource Viewer.CellText}"
+                                        Header="{l:Text Schema_Nullable}"
+                                        HeaderTemplate="{StaticResource PlainHeaderTemplate}" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Failure or empty database -->
+            <StackPanel Grid.Row="0"
+                        Grid.RowSpan="3"
+                        MaxWidth="560"
+                        Margin="32"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Text="{Binding NoticeTitle}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+                <TextBox Margin="0,10,0,0"
+                         HorizontalAlignment="Center"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Foreground="{DynamicResource WindowTextForegroundAlternative}"
+                         IsReadOnly="True"
+                         Text="{Binding NoticeDetail, Mode=OneWay}"
+                         TextAlignment="Center"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Position and paging -->
+            <Border Grid.Row="2"
+                    Height="36"
+                    BorderBrush="{StaticResource Viewer.Divider}"
+                    BorderThickness="0,1,0,0"
+                    Visibility="{Binding HasContent, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <ProgressBar Height="2"
+                                 VerticalAlignment="Top"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{StaticResource Viewer.Accent}"
+                                 IsIndeterminate="{Binding IsLoading}"
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+                    <DockPanel Margin="12,0,8,0"
+                               Visibility="{Binding IsDataVisible, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   Foreground="{DynamicResource WindowTextForegroundAlternative}"
+                                   Text="{Binding RangeText}" />
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button Command="{Binding FirstPageCommand}"
+                                    Content="&#xE892;"
+                                    Style="{StaticResource Viewer.IconButton}"
+                                    ToolTip="{l:Text Pager_First}" />
+                            <Button Command="{Binding PreviousPageCommand}"
+                                    Content="&#xE76B;"
+                                    Style="{StaticResource Viewer.IconButton}"
+                                    ToolTip="{l:Text Pager_Previous}" />
+                            <TextBlock MinWidth="96"
+                                       Margin="8,0"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding PageText}"
+                                       TextAlignment="Center" />
+                            <Button Command="{Binding NextPageCommand}"
+                                    Content="&#xE76C;"
+                                    Style="{StaticResource Viewer.IconButton}"
+                                    ToolTip="{l:Text Pager_Next}" />
+                            <Button Command="{Binding LastPageCommand}"
+                                    Content="&#xE893;"
+                                    Style="{StaticResource Viewer.IconButton}"
+                                    ToolTip="{l:Text Pager_Last}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

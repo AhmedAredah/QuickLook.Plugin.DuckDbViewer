@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.qlplugin
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# Test results
+TestResults/

@@ -1,0 +1,357 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Text colours come from QuickLook's theme (WindowTextForeground*), so the panel follows
+        light and dark mode. Surfaces are translucent greys that read well on both.
+    -->
+    <SolidColorBrush x:Key="Viewer.Divider" Color="#38808080" />
+    <SolidColorBrush x:Key="Viewer.Hover" Color="#22808080" />
+    <SolidColorBrush x:Key="Viewer.Selected" Color="#44808080" />
+    <SolidColorBrush x:Key="Viewer.Header" Color="#1A808080" />
+    <SolidColorBrush x:Key="Viewer.AlternateRow" Color="#0D808080" />
+    <SolidColorBrush x:Key="Viewer.Muted" Color="#FF8A8A8A" />
+    <SolidColorBrush x:Key="Viewer.Accent" Color="#FF3B8EEA" />
+    <FontFamily x:Key="Viewer.IconFont">Segoe MDL2 Assets</FontFamily>
+
+    <!-- ===== Scroll bars: slim and theme-neutral, applied to everything inside the panel ===== -->
+
+    <Style x:Key="Viewer.ScrollThumb" TargetType="Thumb">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="bar"
+                            Margin="2"
+                            Background="{StaticResource Viewer.Selected}"
+                            CornerRadius="3" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bar" Property="Background" Value="{StaticResource Viewer.Muted}" />
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="bar" Property="Background" Value="{StaticResource Viewer.Muted}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Viewer.ScrollPageButton" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="11" />
+        <Setter Property="MinWidth" Value="11" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Border Background="{TemplateBinding Background}">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Style="{StaticResource Viewer.ScrollPageButton}" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource Viewer.ScrollThumb}" />
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Style="{StaticResource Viewer.ScrollPageButton}" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="Height" Value="11" />
+                <Setter Property="MinHeight" Value="11" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Border Background="{TemplateBinding Background}">
+                                <Track x:Name="PART_Track">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageLeftCommand" Style="{StaticResource Viewer.ScrollPageButton}" />
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Style="{StaticResource Viewer.ScrollThumb}" />
+                                    </Track.Thumb>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageRightCommand" Style="{StaticResource Viewer.ScrollPageButton}" />
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== Buttons ===== -->
+
+    <Style x:Key="Viewer.IconButton" TargetType="Button">
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="FontFamily" Value="{StaticResource Viewer.IconFont}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Hover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Selected}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.3" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- A tab: text with an accent underline when selected. -->
+    <Style x:Key="Viewer.Tab" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForegroundAlternative}" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border Padding="10,0" Background="Transparent">
+                        <Grid>
+                            <ContentPresenter VerticalAlignment="Center" />
+                            <Border x:Name="underline"
+                                    Height="2"
+                                    VerticalAlignment="Bottom"
+                                    Background="{StaticResource Viewer.Accent}"
+                                    CornerRadius="1"
+                                    Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="underline" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== Object list ===== -->
+
+    <Style x:Key="Viewer.ObjectList" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+
+    <Style x:Key="Viewer.ObjectItem" TargetType="ListBoxItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Margin="0,1"
+                            Padding="8,5"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Hover}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Selected}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== Data grid ===== -->
+
+    <Style x:Key="Viewer.ColumnGripper" TargetType="Thumb">
+        <Setter Property="Width" Value="7" />
+        <Setter Property="Cursor" Value="SizeWE" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Viewer.ColumnHeader" TargetType="DataGridColumnHeader">
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridColumnHeader">
+                    <Grid Background="{StaticResource Viewer.Header}">
+                        <Border Padding="8,5"
+                                BorderBrush="{StaticResource Viewer.Divider}"
+                                BorderThickness="0,0,1,1">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <Thumb x:Name="PART_LeftHeaderGripper"
+                               HorizontalAlignment="Left"
+                               Style="{StaticResource Viewer.ColumnGripper}" />
+                        <Thumb x:Name="PART_RightHeaderGripper"
+                               HorizontalAlignment="Right"
+                               Style="{StaticResource Viewer.ColumnGripper}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Viewer.NumericColumnHeader"
+           BasedOn="{StaticResource Viewer.ColumnHeader}"
+           TargetType="DataGridColumnHeader">
+        <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
+
+    <!-- Row headers show the row number within the whole table. -->
+    <Style x:Key="Viewer.RowHeader" TargetType="DataGridRowHeader">
+        <Setter Property="Foreground" Value="{StaticResource Viewer.Muted}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridRowHeader">
+                    <Border Padding="8,0"
+                            Background="{StaticResource Viewer.Header}"
+                            BorderBrush="{StaticResource Viewer.Divider}"
+                            BorderThickness="0,0,1,0">
+                        <ContentPresenter HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Viewer.Row" TargetType="DataGridRow">
+        <Setter Property="Background" Value="Transparent" />
+        <Style.Triggers>
+            <Trigger Property="AlternationIndex" Value="1">
+                <Setter Property="Background" Value="{StaticResource Viewer.AlternateRow}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Viewer.Cell" TargetType="DataGridCell">
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Selected}" />
+                <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Viewer.CellText" TargetType="TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="Viewer.NumericCellText"
+           BasedOn="{StaticResource Viewer.CellText}"
+           TargetType="TextBlock">
+        <Setter Property="TextAlignment" Value="Right" />
+    </Style>
+
+    <!-- The corner button of a grid with row headers; selection of everything is not offered. -->
+    <Style x:Key="{ComponentResourceKey ResourceId=DataGridSelectAllButtonStyle, TypeInTargetAssembly={x:Type DataGrid}}" TargetType="Button">
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{StaticResource Viewer.Header}"
+                            BorderBrush="{StaticResource Viewer.Divider}"
+                            BorderThickness="0,0,1,1" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Viewer.Grid" TargetType="DataGrid">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="RowBackground" Value="Transparent" />
+        <Setter Property="AlternationCount" Value="2" />
+        <Setter Property="RowHeight" Value="26" />
+        <Setter Property="GridLinesVisibility" Value="Vertical" />
+        <Setter Property="VerticalGridLinesBrush" Value="{StaticResource Viewer.Divider}" />
+        <Setter Property="AutoGenerateColumns" Value="False" />
+        <Setter Property="IsReadOnly" Value="True" />
+        <Setter Property="CanUserAddRows" Value="False" />
+        <Setter Property="CanUserDeleteRows" Value="False" />
+        <Setter Property="CanUserReorderColumns" Value="False" />
+        <Setter Property="CanUserResizeRows" Value="False" />
+        <!-- Sorting would only reorder the visible page, which is misleading. -->
+        <Setter Property="CanUserSortColumns" Value="False" />
+        <Setter Property="SelectionMode" Value="Extended" />
+        <Setter Property="SelectionUnit" Value="Cell" />
+        <Setter Property="ClipboardCopyMode" Value="ExcludeHeader" />
+        <Setter Property="EnableRowVirtualization" Value="True" />
+        <Setter Property="EnableColumnVirtualization" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource Viewer.ColumnHeader}" />
+        <Setter Property="RowHeaderStyle" Value="{StaticResource Viewer.RowHeader}" />
+        <Setter Property="RowStyle" Value="{StaticResource Viewer.Row}" />
+        <Setter Property="CellStyle" Value="{StaticResource Viewer.Cell}" />
+    </Style>
+
+</ResourceDictionary>
