@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Threading;
 using DuckDB.NET.Data;
 
@@ -18,6 +19,11 @@ internal sealed class DuckSession : IDisposable
 {
     private const int MaxThreads = 4;
     private const string MemoryLimit = "2GB";
+    private const string SpillLimit = "10GB";
+
+    /// <summary>Where sorts that exceed the memory limit spill to; DuckDB cleans it up itself.</summary>
+    private static readonly string SpillDirectory =
+        Path.Combine(Path.GetTempPath(), "QuickLook.Plugin.DuckDbViewer");
 
     private readonly object _gate = new();
     private readonly DuckDBConnection _connection;
@@ -36,6 +42,8 @@ internal sealed class DuckSession : IDisposable
             Execute("SET autoload_known_extensions = false");
             Execute($"SET threads = {Math.Min(MaxThreads, Environment.ProcessorCount)}");
             Execute($"SET memory_limit = {SqlText.Literal(MemoryLimit)}");
+            Execute($"SET temp_directory = {SqlText.Literal(SpillDirectory)}");
+            Execute($"SET max_temp_directory_size = {SqlText.Literal(SpillLimit)}");
         }
         catch
         {

@@ -15,6 +15,8 @@ internal sealed class SqliteFormat : AttachedDatabaseFormat
 
     protected override string AttachOptions => "TYPE sqlite";
 
+    public override bool ReadsRowsAsText => true;
+
     protected override void Prepare(DuckSession session, CancellationToken cancellationToken)
     {
         LoadExtension(session, cancellationToken);

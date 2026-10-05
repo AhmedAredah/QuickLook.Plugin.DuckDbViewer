@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Sorting by any column, applied to the whole table.
+- Filtering by column values, with value counts and combinable filters.
+- Export of the current view to CSV, Parquet or JSON, from the panel and from QuickLook's
+  `⋯` menu.
+
 ## [0.1.0]
 
 ### Added

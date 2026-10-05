@@ -23,8 +23,10 @@ public sealed class SampleFiles : IDisposable
         Parquet = Path.Combine(Directory, "sample.parquet");
         DuckDb = Path.Combine(Directory, "sample.duckdb");
         Sqlite = Path.Combine(Directory, "sample.sqlite");
+        Sales = Path.Combine(Directory, "sales.parquet");
 
         CreateParquet();
+        CreateSales();
         CreateDuckDb();
         CreateSqlite();
     }
@@ -36,6 +38,24 @@ public sealed class SampleFiles : IDisposable
     public string DuckDb { get; }
 
     public string Sqlite { get; }
+
+    /// <summary>
+    /// Ten rows for sorting and filtering tests:
+    /// <code>
+    /// region  amount  note
+    /// north        5  first
+    /// south       10  it's
+    /// north        9  c
+    /// NULL       100  d
+    /// east         1  e
+    /// south        2  f
+    /// north       30  g
+    /// NULL         7  h
+    /// east        20  i
+    /// south       10  j
+    /// </code>
+    /// </summary>
+    public string Sales { get; }
 
     /// <summary>Copies a sample under a new name, for tests that need a specific extension.</summary>
     public string CopyAs(string source, string fileName)
@@ -64,6 +84,15 @@ public sealed class SampleFiles : IDisposable
             "  TIMESTAMPTZ '2024-01-02 03:04:05+00' AS seen_at, " +
             "  (i * 100)::DECIMAL(18, 2) AS amount " +
             $"FROM range({ParquetRowCount}) t(i)) TO {SqlText.Literal(Parquet)} (FORMAT parquet)");
+    }
+
+    private void CreateSales()
+    {
+        Run(
+            "COPY (SELECT * FROM (VALUES " +
+            "('north', 5, 'first'), ('south', 10, 'it''s'), ('north', 9, 'c'), (NULL, 100, 'd'), ('east', 1, 'e'), " +
+            "('south', 2, 'f'), ('north', 30, 'g'), (NULL, 7, 'h'), ('east', 20, 'i'), ('south', 10, 'j')" +
+            $") t(region, amount, \"the note\")) TO {SqlText.Literal(Sales)} (FORMAT parquet)");
     }
 
     private void CreateDuckDb()
@@ -95,6 +124,8 @@ public sealed class SampleFiles : IDisposable
             "CREATE VIEW adults AS SELECT id FROM people",
             "USE memory",
             $"CREATE TABLE target.{SqlText.Identifier(OddTableName)} (\"a b\" TEXT)",
+            "CREATE TABLE target.numbers (n INTEGER)",
+            "INSERT INTO target.numbers VALUES (9), (10), (100), (2), (NULL)",
             "DETACH target",
             // SQLite does not enforce types; store text in the INTEGER column like real files do.
             "SET sqlite_all_varchar = true",

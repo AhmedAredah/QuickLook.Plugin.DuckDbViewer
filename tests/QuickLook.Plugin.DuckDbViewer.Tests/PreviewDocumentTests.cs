@@ -25,7 +25,7 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         var table = Assert.Single(document.Objects);
         Assert.Equal("sample", table.DisplayName);
         Assert.Equal(DataObjectKind.Table, table.Kind);
-        Assert.Equal(SampleFiles.ParquetRowCount, document.CountRows(table));
+        Assert.Equal(SampleFiles.ParquetRowCount, document.CountRows(table, RowQuery.All));
     }
 
     [Fact]
@@ -52,13 +52,13 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         using var document = PreviewDocument.Open(_files.Parquet);
         var table = document.Objects[0];
 
-        var page = document.ReadPage(table, offset: 1000, limit: 500);
+        var page = document.ReadPage(table, RowQuery.All, offset: 1000, limit: 500);
 
         Assert.Equal(SampleFiles.ParquetRowCount - 1000, page.Count);
         Assert.Equal("1000", page[0][0]);
         Assert.Equal("name 1000", page[0][1]);
         Assert.Equal((SampleFiles.ParquetRowCount - 1).ToString(), page[page.Count - 1][0]);
-        Assert.Empty(document.ReadPage(table, offset: 5000, limit: 500));
+        Assert.Empty(document.ReadPage(table, RowQuery.All, offset: 5000, limit: 500));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
     {
         using var document = PreviewDocument.Open(_files.Parquet);
 
-        var page = document.ReadPage(document.Objects[0], offset: 0, limit: 2);
+        var page = document.ReadPage(document.Objects[0], RowQuery.All, offset: 0, limit: 2);
 
         Assert.Equal("0.0", page[0][2]);
         Assert.Null(page[1][2]);
@@ -80,7 +80,7 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
     {
         using var document = PreviewDocument.Open(_files.Parquet);
 
-        var page = document.ReadPage(document.Objects[0], offset: 0, limit: 2);
+        var page = document.ReadPage(document.Objects[0], RowQuery.All, offset: 0, limit: 2);
 
         Assert.Equal(TableReader.MaxCellLength + 1, page[0][4]!.Length);
         Assert.EndsWith("…", page[0][4]);
@@ -110,15 +110,15 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         foreach (var source in document.Objects)
         {
             var columns = document.GetColumns(source);
-            var rows = document.ReadPage(source, 0, 100);
+            var rows = document.ReadPage(source, RowQuery.All, 0, 100);
 
             Assert.NotEmpty(columns);
-            Assert.Equal(document.CountRows(source), rows.Count);
+            Assert.Equal(document.CountRows(source, RowQuery.All), rows.Count);
             Assert.All(rows, row => Assert.Equal(columns.Count, row.Length));
         }
 
         var gamma = document.Objects.Single(o => o.DisplayName == "other.gamma");
-        Assert.Equal("42", document.ReadPage(gamma, 0, 10)[0][0]);
+        Assert.Equal("42", document.ReadPage(gamma, RowQuery.All, 0, 10)[0][0]);
 
         var beta = document.Objects.Single(o => o.DisplayName == "beta");
         Assert.False(document.GetColumns(beta)[0].IsNullable);
@@ -134,7 +134,7 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
 
         Assert.Equal(FileFormat.Sqlite, document.Format);
         Assert.Equal(
-            new[] { "adults", SampleFiles.OddTableName, "people" },
+            new[] { "adults", SampleFiles.OddTableName, "numbers", "people" },
             document.Objects.Select(o => o.DisplayName).OrderBy(n => n, StringComparer.Ordinal));
         Assert.True(document.Objects.Single(o => o.DisplayName == "adults").IsView);
     }
@@ -151,7 +151,7 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         Assert.Equal(new[] { "BIGINT", "VARCHAR", "DOUBLE" }, columns.Select(c => c.Type));
 
         // Looking up the schema must not switch row reading back to typed mode.
-        Assert.Equal("not a number", document.ReadPage(people, 0, 100)[2][0]);
+        Assert.Equal("not a number", document.ReadPage(people, RowQuery.All, 0, 100)[2][0]);
     }
 
     [Fact]
@@ -160,9 +160,9 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         using var document = PreviewDocument.Open(_files.Sqlite);
         var people = document.Objects.Single(o => o.DisplayName == "people");
 
-        var rows = document.ReadPage(people, 0, 100);
+        var rows = document.ReadPage(people, RowQuery.All, 0, 100);
 
-        Assert.Equal(3, document.CountRows(people));
+        Assert.Equal(3, document.CountRows(people, RowQuery.All));
         Assert.Equal(new[] { "1", "2020-01-31", "1.5" }, rows[0]);
         Assert.Equal(new string?[] { "2", null, null }, rows[1]);
         Assert.Equal(new[] { "not a number", "not a date", "n/a" }, rows[2]);
@@ -175,11 +175,11 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         var odd = document.Objects.Single(o => o.DisplayName == SampleFiles.OddTableName);
 
         Assert.Equal("a b", Assert.Single(document.GetColumns(odd)).Name);
-        Assert.Empty(document.ReadPage(odd, 0, 10));
+        Assert.Empty(document.ReadPage(odd, RowQuery.All, 0, 10));
 
         var view = document.Objects.Single(o => o.DisplayName == "adults");
         Assert.Equal("id", Assert.Single(document.GetColumns(view)).Name);
-        Assert.Equal(3, document.ReadPage(view, 0, 10).Count);
+        Assert.Equal(3, document.ReadPage(view, RowQuery.All, 0, 10).Count);
     }
 
     // ---- Behaviour shared by all formats ---------------------------------------------------
@@ -197,8 +197,8 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
                 foreach (var source in document.Objects)
                 {
                     document.GetColumns(source);
-                    document.ReadPage(source, 0, 10);
-                    document.CountRows(source);
+                    document.ReadPage(source, RowQuery.All, 0, 10);
+                    document.CountRows(source, RowQuery.All);
                 }
             }
 
@@ -220,10 +220,10 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
         cancellation.Cancel();
 
         Assert.ThrowsAny<OperationCanceledException>(
-            () => document.ReadPage(document.Objects[0], 0, 10, cancellation.Token));
+            () => document.ReadPage(document.Objects[0], RowQuery.All, 0, 10, cancellation.Token));
 
         // The document stays usable afterwards.
-        Assert.Equal(10, document.ReadPage(document.Objects[0], 0, 10).Count);
+        Assert.Equal(10, document.ReadPage(document.Objects[0], RowQuery.All, 0, 10).Count);
     }
 
     [Fact]
@@ -241,6 +241,6 @@ public sealed class PreviewDocumentTests : IClassFixture<SampleFiles>
 
         using var document = PreviewDocument.Open(path);
 
-        Assert.Equal(SampleFiles.ParquetRowCount, document.CountRows(document.Objects[0]));
+        Assert.Equal(SampleFiles.ParquetRowCount, document.CountRows(document.Objects[0], RowQuery.All));
     }
 }

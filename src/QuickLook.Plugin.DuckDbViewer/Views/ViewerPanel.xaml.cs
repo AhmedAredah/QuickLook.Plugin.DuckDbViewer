@@ -9,8 +9,8 @@ using QuickLook.Plugin.DuckDbViewer.ViewModels;
 namespace QuickLook.Plugin.DuckDbViewer.Views;
 
 /// <summary>
-/// The preview panel. Everything is data-bound except the data grid's columns, which depend
-/// on the previewed object and are rebuilt here whenever its schema changes.
+/// The preview panel. Everything is data-bound except what depends on the previewed object's
+/// schema (the data grid's columns) and the opening and closing of popups.
 /// </summary>
 internal partial class ViewerPanel : UserControl, IDisposable
 {
@@ -38,8 +38,20 @@ internal partial class ViewerPanel : UserControl, IDisposable
         return _viewModel.OpenAsync(path);
     }
 
+    /// <summary>Opens the filter popup of a column below <paramref name="anchor"/>.</summary>
+    public void ShowFilter(ColumnHeaderViewModel header, UIElement anchor)
+    {
+        filterPopup.DataContext = _viewModel.BeginFilter(header);
+        filterPopup.PlacementTarget = anchor;
+        filterPopup.IsOpen = true;
+    }
+
+    public void ShowExportMenu() => exportPopup.IsOpen = true;
+
     public void Dispose()
     {
+        filterPopup.IsOpen = false;
+        exportPopup.IsOpen = false;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         _viewModel.Dispose();
     }
@@ -48,7 +60,7 @@ internal partial class ViewerPanel : UserControl, IDisposable
     {
         switch (e.PropertyName)
         {
-            case nameof(ViewerViewModel.Columns):
+            case nameof(ViewerViewModel.ColumnHeaders):
                 RebuildColumns();
                 break;
             case nameof(ViewerViewModel.Rows):
@@ -63,21 +75,22 @@ internal partial class ViewerPanel : UserControl, IDisposable
         var numericHeaderStyle = (Style)FindResource("Viewer.NumericColumnHeader");
 
         dataGrid.Columns.Clear();
-        for (var i = 0; i < _viewModel.Columns.Count; i++)
+        for (var i = 0; i < _viewModel.ColumnHeaders.Count; i++)
         {
-            var info = _viewModel.Columns[i];
+            var header = _viewModel.ColumnHeaders[i];
+            var isNumeric = header.Column.IsNumeric;
 
             // Rows are string arrays, so binding by position works for any column name.
             var column = new DataGridTextColumn
             {
-                Header = info,
+                Header = header,
                 HeaderTemplate = headerTemplate,
                 Binding = new Binding($"[{i}]") { Mode = BindingMode.OneTime, TargetNullValue = NullText },
-                ElementStyle = CreateCellTextStyle(i, info.IsNumeric),
+                ElementStyle = CreateCellTextStyle(i, isNumeric),
                 MinWidth = MinColumnWidth,
                 MaxWidth = MaxColumnWidth,
             };
-            if (info.IsNumeric)
+            if (isNumeric)
                 column.HeaderStyle = numericHeaderStyle;
 
             dataGrid.Columns.Add(column);
@@ -110,4 +123,46 @@ internal partial class ViewerPanel : UserControl, IDisposable
         var rowNumber = _viewModel.Page.Offset + e.Row.GetIndex() + 1;
         e.Row.Header = rowNumber.ToString("N0");
     }
+
+    /// <summary>
+    /// A header click sorts the whole table in the engine. The grid's own sorting, which would
+    /// only reorder the rows of the visible page, is suppressed.
+    /// </summary>
+    private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
+    {
+        e.Handled = true;
+        if (e.Column.Header is ColumnHeaderViewModel header)
+            _ = _viewModel.ToggleSortAsync(header);
+    }
+
+    private void FilterButton_Click(object sender, RoutedEventArgs e)
+    {
+        var button = (FrameworkElement)sender;
+        if (button.DataContext is ColumnHeaderViewModel header)
+            ShowFilter(header, button);
+
+        e.Handled = true;
+    }
+
+    private void ApplyFilter_Click(object sender, RoutedEventArgs e)
+    {
+        if (filterPopup.DataContext is FilterEditorViewModel editor)
+            _ = _viewModel.ApplyFilterAsync(editor);
+
+        filterPopup.IsOpen = false;
+    }
+
+    private void RemoveFilter_Click(object sender, RoutedEventArgs e)
+    {
+        if (filterPopup.DataContext is FilterEditorViewModel editor)
+            _ = _viewModel.ClearFilterAsync(editor.Column.Name);
+
+        filterPopup.IsOpen = false;
+    }
+
+    private void FilterPopup_Closed(object sender, EventArgs e) => _viewModel.EndFilter();
+
+    private void ExportButton_Click(object sender, RoutedEventArgs e) => ShowExportMenu();
+
+    private void ExportAction_Click(object sender, RoutedEventArgs e) => exportPopup.IsOpen = false;
 }

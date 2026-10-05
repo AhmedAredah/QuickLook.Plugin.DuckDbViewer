@@ -3,10 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using QuickLook.Plugin.DuckDbViewer.Data;
 using QuickLook.Plugin.DuckDbViewer.Native;
+using QuickLook.Plugin.DuckDbViewer.ViewModels;
 using QuickLook.Plugin.DuckDbViewer.Views;
 
 namespace DuckDbViewer.DevHost;
@@ -15,10 +18,13 @@ namespace DuckDbViewer.DevHost;
 /// Hosts the preview panel in a plain window.
 /// <code>
 /// DuckDbViewer.DevHost &lt;file&gt; [--theme light|dark] [--select &lt;object&gt;] [--tab schema]
-///                      [--page &lt;number&gt;] [--size &lt;width&gt;x&lt;height&gt;] [--screenshot &lt;png&gt;]
+///                      [--filter &lt;column&gt;=&lt;value&gt;|&lt;value&gt;] [--sort &lt;column&gt;[:desc]]
+///                      [--page &lt;number&gt;] [--export csv|parquet|json]
+///                      [--size &lt;width&gt;x&lt;height&gt;] [--screenshot &lt;png&gt;] [--popup filter:&lt;column&gt;|export]
 /// </code>
 /// With <c>--screenshot</c> the window is rendered off-screen to an image and the host exits,
-/// which makes UI changes reviewable without touching the desktop.
+/// which makes UI changes reviewable without touching the desktop. <c>--popup</c> additionally
+/// renders one of the panel's popups to <c>&lt;png&gt;-popup.png</c>.
 /// </summary>
 internal static class Program
 {
@@ -29,7 +35,9 @@ internal static class Program
         {
             MessageBox.Show(
                 "Usage: DuckDbViewer.DevHost <file> [--theme light|dark] [--select <object>] " +
-                "[--tab schema] [--page <number>] [--size <width>x<height>] [--screenshot <png>]",
+                "[--tab schema] [--filter <column>=<value>|<value>] [--sort <column>[:desc]] [--page <number>] " +
+                "[--export csv|parquet|json] [--size <width>x<height>] [--screenshot <png>] " +
+                "[--popup filter:<column>|export]",
                 "DuckDbViewer.DevHost");
             return 2;
         }
@@ -75,7 +83,11 @@ internal static class Program
                     return;
 
                 await Settle(window.Dispatcher);
-                Capture((FrameworkElement)window.Content, Path.GetFullPath(screenshot));
+                var file = Path.GetFullPath(screenshot);
+                Capture(panel, file);
+                if (Option(args, "--popup") is { } popup)
+                    await CapturePopup(panel, popup, Path.ChangeExtension(file, null) + "-popup.png");
+
                 window.Close();
             }
             catch (Exception e)
@@ -103,11 +115,85 @@ internal static class Program
             await WaitUntil(() => !viewModel.IsLoading && (viewModel.Page.TotalRows.HasValue || viewModel.HasNotice));
         }
 
+        if (Option(args, "--filter") is { } filter)
+        {
+            var parts = filter.Split(['='], 2);
+            var editor = viewModel.BeginFilter(Header(panel, parts[0]));
+            await WaitUntil(() => !editor.IsLoading);
+            editor.SelectNoneCommand.Execute(null);
+            foreach (var value in parts[1].Split('|'))
+                editor.Items.Single(i => (i.Value ?? "NULL") == value).IsChecked = true;
+            await viewModel.ApplyFilterAsync(editor);
+        }
+
+        if (Option(args, "--sort") is { } sort)
+        {
+            var parts = sort.Split(':');
+            var header = Header(panel, parts[0]);
+            await viewModel.ToggleSortAsync(header);
+            if (parts.Length > 1 && parts[1] == "desc")
+                await viewModel.ToggleSortAsync(header);
+        }
+
         if (Option(args, "--page") is { } page)
             await viewModel.GoToPageAsync(int.Parse(page) - 1);
 
+        if (Option(args, "--export") is { } format)
+            await viewModel.ExportAsync((ExportFormat)Enum.Parse(typeof(ExportFormat), format, ignoreCase: true));
+
+        await WaitUntil(() => !viewModel.IsLoading && (viewModel.Page.TotalRows.HasValue || viewModel.HasNotice));
+
         if (string.Equals(Option(args, "--tab"), "schema", StringComparison.OrdinalIgnoreCase))
             viewModel.IsSchemaVisible = true;
+    }
+
+    private static ColumnHeaderViewModel Header(ViewerPanel panel, string column)
+    {
+        return panel.ViewModel.ColumnHeaders.FirstOrDefault(h => h.Name == column)
+            ?? throw new ArgumentException($"No column named '{column}'.");
+    }
+
+    /// <summary>
+    /// Renders the content of one of the panel's popups. The content is moved into its own
+    /// off-screen window, because an opened popup would be pushed onto the visible desktop.
+    /// </summary>
+    private static async Task CapturePopup(ViewerPanel panel, string which, string file)
+    {
+        Popup popup;
+        object dataContext;
+        if (which.StartsWith("filter:", StringComparison.OrdinalIgnoreCase))
+        {
+            var editor = panel.ViewModel.BeginFilter(Header(panel, which.Substring("filter:".Length)));
+            await WaitUntil(() => !editor.IsLoading);
+            popup = panel.filterPopup;
+            dataContext = editor;
+        }
+        else
+        {
+            popup = panel.exportPopup;
+            dataContext = panel.ViewModel;
+        }
+
+        var content = (FrameworkElement)popup.Child;
+        popup.Child = null;
+        content.DataContext = dataContext;
+
+        var window = new Window
+        {
+            Content = content,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            WindowStyle = WindowStyle.None,
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -20000,
+            Top = -20000,
+        };
+        window.SetResourceReference(Window.BackgroundProperty, "MainWindowBackgroundNoTransparent");
+        window.Show();
+        await Settle(window.Dispatcher);
+        Capture(content, file);
+        window.Close();
     }
 
     private static ResourceDictionary LoadTheme(bool dark)

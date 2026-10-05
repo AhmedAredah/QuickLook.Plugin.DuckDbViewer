@@ -21,6 +21,12 @@ internal abstract class FormatHandler
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "No handler for this format."),
     };
 
+    /// <summary>
+    /// Whether every value of this format arrives as text regardless of the column type.
+    /// Sorting then has to restore numeric order itself.
+    /// </summary>
+    public virtual bool ReadsRowsAsText => false;
+
     /// <summary>Makes the file readable in <paramref name="session"/> and lists its objects.</summary>
     public abstract IReadOnlyList<DataObject> Open(DuckSession session, string path,
         CancellationToken cancellationToken);

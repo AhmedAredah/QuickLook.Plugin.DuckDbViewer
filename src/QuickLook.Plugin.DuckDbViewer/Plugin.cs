@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
+using QuickLook.Common.Controls;
 using QuickLook.Common.Helpers;
 using QuickLook.Common.Plugin;
+using QuickLook.Common.Plugin.MoreMenu;
 using QuickLook.Plugin.DuckDbViewer.Detection;
 using QuickLook.Plugin.DuckDbViewer.Native;
 using QuickLook.Plugin.DuckDbViewer.Views;
@@ -18,13 +22,35 @@ namespace QuickLook.Plugin.DuckDbViewer;
 /// QuickLook creates one long-lived instance to call <see cref="Init"/> and
 /// <see cref="CanHandle"/>, and a fresh instance for every preview.
 /// </remarks>
-public sealed class Plugin : IViewer
+public sealed class Plugin : IViewer, IMoreMenu
 {
     private ViewerPanel? _panel;
 
     // User plugins are consulted before built-in ones of the same priority, so the default
     // is enough to take precedence for the formats this plugin recognises.
     public int Priority => 0;
+
+    /// <summary>
+    /// Entries for QuickLook's "more" menu in the title bar. QuickLook reads this once, right
+    /// after <see cref="View"/>; the commands enable themselves when there is data to export.
+    /// </summary>
+    public IEnumerable<IMenuItem> MenuItems
+    {
+        get
+        {
+            if (_panel is null)
+                return [];
+
+            return _panel.ViewModel.ExportActions.Select(action => new MoreMenuItem
+            {
+                Icon = FontSymbols.Export,
+                Header = action.Title,
+                Command = action.Command,
+                IsVisible = true,
+                IsEnabled = true,
+            }).ToList();
+        }
+    }
 
     public void Init()
     {

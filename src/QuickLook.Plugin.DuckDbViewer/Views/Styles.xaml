@@ -133,6 +133,143 @@
         </Style.Triggers>
     </Style>
 
+    <!-- A plain text button for secondary actions. -->
+    <Style x:Key="Viewer.TextButton" TargetType="Button">
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource Viewer.Divider}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Hover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Selected}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.4" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The primary action of a flyout. -->
+    <Style x:Key="Viewer.AccentButton"
+           BasedOn="{StaticResource Viewer.TextButton}"
+           TargetType="Button">
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="{StaticResource Viewer.Accent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Viewer.Accent}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#FF5BA2F0" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="#FF2F7AD0" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Borderless text that behaves like a link. -->
+    <Style x:Key="Viewer.LinkButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Viewer.Accent}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="Transparent">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.4" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- A full-width row in a menu flyout. -->
+    <Style x:Key="Viewer.MenuButton"
+           BasedOn="{StaticResource Viewer.TextButton}"
+           TargetType="Button">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+
+    <!-- The funnel inside a column header: faint until hovered or active. -->
+    <Style x:Key="Viewer.HeaderFilterButton"
+           BasedOn="{StaticResource Viewer.IconButton}"
+           TargetType="Button">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Opacity" Value="0.45" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Opacity" Value="1" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The surface of a popup. -->
+    <Style x:Key="Viewer.Flyout" TargetType="Border">
+        <Setter Property="Margin" Value="8" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Background" Value="{DynamicResource MainWindowBackgroundNoTransparent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Viewer.Divider}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource WindowTextForeground}" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect BlurRadius="12"
+                                  Opacity="0.35"
+                                  ShadowDepth="2" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A checklist row: no selection highlight, just hover. -->
+    <Style x:Key="Viewer.CheckItem" TargetType="ListBoxItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Padding="6,3"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="3">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Viewer.Hover}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- A tab: text with an accent underline when selected. -->
     <Style x:Key="Viewer.Tab" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource WindowTextForegroundAlternative}" />

@@ -54,15 +54,53 @@ internal sealed class PreviewDocument : IDisposable
         return _handler.DescribeColumns(_session, source, cancellationToken);
     }
 
-    public long CountRows(DataObject source, CancellationToken cancellationToken = default)
+    public long CountRows(DataObject source, RowQuery query, CancellationToken cancellationToken = default)
     {
-        return TableReader.CountRows(_session, source, cancellationToken);
+        return TableReader.CountRows(_session, source, query, cancellationToken);
     }
 
-    public IReadOnlyList<string?[]> ReadPage(DataObject source, long offset, int limit,
+    public IReadOnlyList<string?[]> ReadPage(DataObject source, RowQuery query, long offset, int limit,
         CancellationToken cancellationToken = default)
     {
-        return TableReader.ReadPage(_session, source, offset, limit, cancellationToken);
+        return TableReader.ReadPage(_session, source, query, _handler.ReadsRowsAsText, offset, limit,
+            cancellationToken);
+    }
+
+    /// <summary>The most frequent values of a column, for building a filter.</summary>
+    public ColumnValues GetDistinctValues(DataObject source, string column, RowQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        return TableReader.DistinctValues(_session, source, column, query, cancellationToken);
+    }
+
+    /// <summary>
+    /// Writes the rows matching <paramref name="query"/> to a new file. A file left behind by
+    /// a failed or cancelled export is removed.
+    /// </summary>
+    public void Export(DataObject source, RowQuery query, string path, ExportFormat format,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            TableReader.Export(_session, source, query, _handler.ReadsRowsAsText, path, format, cancellationToken);
+        }
+        catch
+        {
+            TryDelete(path);
+            throw;
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Nothing more can be done about a partial file that cannot be removed.
+        }
     }
 
     /// <summary>Closes the engine and releases the handle on the previewed file.</summary>

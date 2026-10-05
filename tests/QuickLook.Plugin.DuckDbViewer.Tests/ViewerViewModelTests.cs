@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using QuickLook.Plugin.DuckDbViewer.Data;
 using QuickLook.Plugin.DuckDbViewer.ViewModels;
 using Xunit;
 
@@ -103,6 +104,140 @@ public sealed class ViewerViewModelTests : IClassFixture<SampleFiles>
                 return false;
             }
         });
+    }
+
+    [Fact]
+    public async Task Clicking_a_header_cycles_ascending_descending_unsorted()
+    {
+        using var viewModel = new ViewerViewModel();
+        await viewModel.OpenAsync(_files.Sales);
+        var amount = viewModel.ColumnHeaders.Single(h => h.Name == "amount");
+        var region = viewModel.ColumnHeaders.Single(h => h.Name == "region");
+
+        await viewModel.ToggleSortAsync(amount);
+        Assert.Equal("1", viewModel.Rows[0][1]);
+        Assert.NotEqual(string.Empty, amount.SortGlyph);
+        var ascendingGlyph = amount.SortGlyph;
+
+        await viewModel.ToggleSortAsync(amount);
+        Assert.Equal("100", viewModel.Rows[0][1]);
+        Assert.NotEqual(ascendingGlyph, amount.SortGlyph);
+
+        await viewModel.ToggleSortAsync(region);
+        Assert.Equal("east", viewModel.Rows[0][0]);
+        Assert.Equal(string.Empty, amount.SortGlyph);
+
+        await viewModel.ToggleSortAsync(region);
+        await viewModel.ToggleSortAsync(region);
+        Assert.Null(viewModel.Query.Sort);
+        Assert.Equal("north", viewModel.Rows[0][0]);
+    }
+
+    [Fact]
+    public async Task Applying_a_filter_narrows_rows_counts_and_paging()
+    {
+        using var viewModel = new ViewerViewModel();
+        await viewModel.OpenAsync(_files.Sales);
+        var region = viewModel.ColumnHeaders.Single(h => h.Name == "region");
+
+        var editor = viewModel.BeginFilter(region);
+        await WaitUntil(() => !editor.IsLoading);
+        Assert.Equal(4, editor.Items.Count);
+
+        editor.SelectNoneCommand.Execute(null);
+        editor.Items.Single(i => i.Value == "north").IsChecked = true;
+        await viewModel.ApplyFilterAsync(editor);
+
+        Assert.True(viewModel.HasFilters);
+        Assert.True(region.IsFiltered);
+        Assert.Equal(3, viewModel.Rows.Count);
+        Assert.Equal(3, viewModel.Page.TotalRows);
+        Assert.Contains("3", viewModel.SummaryText);
+        Assert.Contains("10", viewModel.SummaryText);
+        Assert.True(viewModel.ClearFiltersCommand.CanExecute(null));
+
+        // Reopening the editor reflects the applied filter.
+        var reopened = viewModel.BeginFilter(region);
+        await WaitUntil(() => !reopened.IsLoading);
+        Assert.True(reopened.HasExistingFilter);
+        Assert.Equal(new[] { "north" }, reopened.Items.Where(i => i.IsChecked).Select(i => i.Value));
+
+        await viewModel.ClearFilterAsync("region");
+        Assert.False(viewModel.HasFilters);
+        Assert.False(region.IsFiltered);
+        Assert.Equal(10, viewModel.Rows.Count);
+        Assert.Equal(10, viewModel.Page.TotalRows);
+    }
+
+    [Fact]
+    public async Task Selecting_another_object_resets_filters_and_sorting()
+    {
+        using var viewModel = new ViewerViewModel();
+        await viewModel.OpenAsync(_files.DuckDb);
+        var first = viewModel.SelectedObject;
+        await viewModel.ToggleSortAsync(viewModel.ColumnHeaders[0]);
+        Assert.NotNull(viewModel.Query.Sort);
+
+        viewModel.SelectedObject = viewModel.Objects.First(o => o != first);
+        await WaitUntil(() => !viewModel.IsLoading && viewModel.Page.TotalRows.HasValue);
+
+        Assert.Null(viewModel.Query.Sort);
+        Assert.False(viewModel.HasFilters);
+    }
+
+    [Fact]
+    public async Task Export_writes_the_current_view_next_to_the_file_without_overwriting()
+    {
+        var path = _files.CopyAs(_files.Sales, "to-export.parquet");
+        using var viewModel = new ViewerViewModel();
+        await viewModel.OpenAsync(path);
+        Assert.True(viewModel.CanExport);
+
+        var editor = viewModel.BeginFilter(viewModel.ColumnHeaders.Single(h => h.Name == "region"));
+        await WaitUntil(() => !editor.IsLoading);
+        editor.Items.Single(i => i.Value == "south").IsChecked = false;
+        await viewModel.ApplyFilterAsync(editor);
+
+        await viewModel.ExportAsync(ExportFormat.Csv);
+        var first = viewModel.ExportedPath;
+        await viewModel.ExportAsync(ExportFormat.Csv);
+        var second = viewModel.ExportedPath;
+
+        Assert.Equal(System.IO.Path.Combine(_files.Directory, "to-export.csv"), first);
+        Assert.Equal(System.IO.Path.Combine(_files.Directory, "to-export (2).csv"), second);
+        Assert.Equal(8, System.IO.File.ReadAllLines(first!).Length);
+        Assert.False(viewModel.IsExporting);
+        Assert.True(viewModel.HasStatus);
+        Assert.True(viewModel.ShowExportedFileCommand.CanExecute(null));
+
+        viewModel.DismissStatusCommand.Execute(null);
+        Assert.False(viewModel.HasStatus);
+        Assert.False(viewModel.HasExportedFile);
+    }
+
+    [Fact]
+    public async Task Export_of_a_database_object_includes_the_object_name()
+    {
+        var path = _files.CopyAs(_files.DuckDb, "named.duckdb");
+        using var viewModel = new ViewerViewModel();
+        await viewModel.OpenAsync(path);
+        viewModel.SelectedObject = viewModel.Objects.Single(o => o.DisplayName == "other.gamma");
+        await WaitUntil(() => viewModel.Page.TotalRows == 1);
+
+        await viewModel.ExportAsync(ExportFormat.Json);
+
+        Assert.Equal(System.IO.Path.Combine(_files.Directory, "named_gamma.json"), viewModel.ExportedPath);
+    }
+
+    [Fact]
+    public void Export_actions_cover_every_format_and_are_disabled_without_content()
+    {
+        using var viewModel = new ViewerViewModel();
+
+        Assert.Equal(
+            Enum.GetValues(typeof(ExportFormat)).Cast<ExportFormat>(),
+            viewModel.ExportActions.Select(a => a.Format));
+        Assert.All(viewModel.ExportActions, a => Assert.False(a.Command.CanExecute(null)));
     }
 
     [Fact]

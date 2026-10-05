@@ -11,6 +11,10 @@ spacebar: **Parquet**, **DuckDB** and **SQLite**. It is powered by an embedded
 - Tables and views listed in a sidebar; a Parquet file opens straight into its rows.
 - Paged grid (500 rows per page) that stays responsive on files with millions of rows.
 - Schema tab with column names, types and nullability.
+- **Sort** by clicking a column header; the whole table is sorted, not just the visible page.
+- **Filter** by value: the funnel in a column header lists the column's values with their
+  row counts.
+- **Export** the current view, with its filters and sort order, to CSV, Parquet or JSON.
 - NULLs are shown distinctly, numbers are right-aligned, long values are truncated.
 - Files are opened **read-only** and released as soon as the preview closes.
 - Works **offline**: nothing is downloaded while previewing.
@@ -24,6 +28,21 @@ spacebar: **Parquet**, **DuckDB** and **SQLite**. It is powered by an embedded
 
 The extension only decides which files are inspected; the format itself is detected from
 the file's contents, so a `.db` file is opened correctly whichever engine wrote it.
+
+![Filtering, sorting and exporting a Parquet file](docs/images/parquet-filtered.png)
+
+### Sorting, filtering and exporting
+
+- Click a column header to sort ascending, again for descending, a third time to clear.
+- The filter of a column offers its 1,000 most frequent values. Unticking values hides
+  them; **Select none** followed by ticking values shows only those. Filters on several
+  columns combine, and **Clear filters** removes them all.
+- **Export** (in the panel, or in QuickLook's `⋯` menu) writes a new file next to the
+  original, for example `trips.parquet` to `trips.csv`, or `shop.duckdb` to
+  `shop_orders.csv`. Existing files are never overwritten; if the folder is read-only the
+  file goes to your Downloads folder. There is no save dialog because QuickLook treats
+  <kbd>Enter</kbd> and <kbd>Space</kbd> as "open" and "close preview" while any of its
+  windows has the focus, so confirming a file name would close the preview.
 
 ## Install
 
@@ -47,8 +66,11 @@ Requirements: QuickLook 4.5 or later on 64-bit Windows with .NET Framework 4.7.2
   host. Database files written by a newer DuckDB with a newer storage format may not open;
   the preview then shows DuckDB's error message.
 - Encrypted SQLite databases are not supported.
-- Values are displayed as text exactly as DuckDB renders them. Sorting, filtering and
-  running queries are not available.
+- Values are displayed as text exactly as DuckDB renders them, and filters match that text
+  (its first 200 characters). There is no free-text search and no SQL input: both would
+  need the <kbd>Space</kbd> key, which QuickLook reserves for closing the preview.
+- SQLite values are read as text because SQLite does not enforce column types. Numeric
+  columns still sort numerically, but a SQLite table exported to Parquet has text columns.
 - A DuckDB file that another process has open for writing cannot be read at the same time.
 
 ## Building
@@ -72,8 +94,10 @@ The first build downloads the SQLite extension for the pinned DuckDB version int
 dotnet run --project tools/DuckDbViewer.DevHost -- C:\data\sample.duckdb --theme light
 ```
 
-Add `--screenshot out.png` to render the panel off-screen to an image and exit; `--select
-<object>`, `--tab schema`, `--page <n>` and `--size <w>x<h>` choose what is rendered.
+Add `--screenshot out.png` to render the panel off-screen to an image and exit. `--select
+<object>`, `--tab schema`, `--filter <column>=<a>|<b>`, `--sort <column>[:desc]`,
+`--page <n>`, `--export csv|parquet|json`, `--popup filter:<column>|export` and
+`--size <w>x<h>` choose what is done and rendered.
 
 ## Project layout
 
@@ -81,9 +105,9 @@ Add `--screenshot out.png` to render the panel off-screen to an image and exit; 
 src/QuickLook.Plugin.DuckDbViewer/
   Plugin.cs          QuickLook entry point (IViewer); the only public type, no logic
   Detection/         Which files the plugin accepts, decided by magic bytes
-  Data/              DuckDB session, schema/count/page queries, SQL escaping
+  Data/              DuckDB session, row queries (filter, sort, page, export), SQL escaping
   Formats/           One class per file format
-  ViewModels/        Preview state, background loading, cancellation, paging
+  ViewModels/        Preview state, background loading, cancellation, paging, filter editor
   Views/             XAML panel and styles
   Localization/      Translations.config lookup
   Native/            Loading the native engine and private dependencies in the host
@@ -104,7 +128,7 @@ only through `Data/PreviewDocument`.
    the format, otherwise return a table function call as `ParquetFormat` does.
 3. Register it in `FormatHandler.For` and add a sample to `tests/SampleFiles.cs`.
 
-Schema, row counts, paging and the whole UI then work without further changes.
+Schema, row counts, paging, sorting, filtering, export and the whole UI then work without further changes.
 
 ### Upgrading DuckDB
 
