@@ -46,7 +46,7 @@ the file's contents, so a `.db` file is opened correctly whichever engine wrote 
 
 ## Install
 
-1. Download the latest `.qlplugin` file from the releases page.
+1. Download the latest `.qlplugin` file from the [releases page](https://github.com/AhmedAredah/QuickLook.Plugin.DuckDbViewer/releases).
 2. Select it in File Explorer and press <kbd>Space</kbd>.
 3. Click **Install**, then restart QuickLook.
 

@@ -6,17 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-05
+
 ### Added
 
 - Sorting by any column, applied to the whole table.
 - Filtering by column values, with value counts and combinable filters.
 - Export of the current view to CSV, Parquet or JSON, from the panel and from QuickLook's
   `⋯` menu.
-
-## [0.1.0]
-
-### Added
-
 - Preview of Parquet files (`.parquet`, `.parq`).
 - Preview of DuckDB databases (`.duckdb`, `.ddb`, `.db`), including views and objects in
   schemas other than `main`.
