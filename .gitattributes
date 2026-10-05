@@ -7,4 +7,3 @@
 *.arrow binary
 *.arrows binary
 *.feather binary
-*.cmd text eol=crlf

@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DuckDbViewer.Core\DuckDbViewer.Core.csproj" />
+    <ProjectReference Include="..\..\src\QuickLook.Plugin.DuckDbViewer\QuickLook.Plugin.DuckDbViewer.csproj" />
   </ItemGroup>
 
 </Project>

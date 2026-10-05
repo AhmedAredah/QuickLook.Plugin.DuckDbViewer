@@ -1,13 +1,8 @@
 # QuickLook.Plugin.DuckDbViewer
 
-Previews data files on Windows, as a [QuickLook](https://github.com/QL-Win/QuickLook) plugin
-and as a preview handler for **File Explorer's preview pane** and
-**[PowerToys Peek](https://learn.microsoft.com/windows/powertoys/peek)**. Both show the same
-viewer.
-
-Supported formats: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**.
-It is powered by an embedded [DuckDB](https://duckdb.org/) engine, so one code path serves
-every format.
+A [QuickLook](https://github.com/QL-Win/QuickLook) plugin that previews data files with the
+spacebar: **Parquet**, **DuckDB**, **SQLite**, **Avro** and **Arrow / Feather**. It is powered by an embedded
+[DuckDB](https://duckdb.org/) engine, so one code path serves every format.
 
 ![A DuckDB database in dark mode](docs/images/duckdb-dark.png)
 
@@ -53,7 +48,7 @@ the file's contents, so a `.db` file is opened correctly whichever engine wrote 
   <kbd>Enter</kbd> and <kbd>Space</kbd> as "open" and "close preview" while any of its
   windows has the focus, so confirming a file name would close the preview.
 
-## Install for QuickLook
+## Install
 
 1. Download the latest `.qlplugin` file from the [releases page](https://github.com/AhmedAredah/QuickLook.Plugin.DuckDbViewer/releases).
 2. Select it in File Explorer and press <kbd>Space</kbd>.
@@ -68,31 +63,6 @@ Two packages are published:
 
 Requirements: QuickLook 4.5 or later on 64-bit Windows with .NET Framework 4.7.2 or later
 (included in Windows 10 1803 and newer).
-
-## Install for File Explorer and PowerToys Peek
-
-1. Download `DuckDbViewer.PreviewHandler-x.y.z.zip` from the
-   [releases page](https://github.com/AhmedAredah/QuickLook.Plugin.DuckDbViewer/releases)
-   (or the `-lite` variant, which downloads the SQLite, Avro and Arrow extensions on first use).
-2. Unpack it to a folder you will keep, for example `%LOCALAPPDATA%\Programs\DuckDbViewer`.
-   Windows starts the previewer from that folder.
-3. Run `Install.cmd` in that folder. It registers the previewer for your user account only;
-   no administrator rights are needed.
-
-Then select a data file and press <kbd>Alt</kbd>+<kbd>P</kbd> in File Explorer, or open it
-with Peek (<kbd>Ctrl</kbd>+<kbd>Space</kbd> by default). To remove it, run `Uninstall.cmd`
-and delete the folder.
-
-Requirements: 64-bit Windows 10 or 11 with the
-[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
-
-Notes:
-
-- Peek has its own previewer for `.db`, `.sqlite` and `.sqlite3` and uses it in preference
-  to this one. File Explorer's preview pane uses this one for those extensions too.
-- The previewer runs in its own process, which starts with the first preview and exits by
-  itself after two minutes without one.
-- If a preview does not appear, see `%LOCALAPPDATA%\DuckDbViewer\preview-handler.log`.
 
 ## Limitations
 
@@ -116,15 +86,10 @@ Notes:
 Requires the [.NET SDK](https://dotnet.microsoft.com/download) 9.0 on Windows.
 
 ```powershell
-dotnet test                    # build everything and run the tests on both runtimes
-./scripts/pack.ps1             # create artifacts\*.qlplugin and artifacts\*.zip
+dotnet test                    # build everything and run the tests
+./scripts/pack.ps1             # create artifacts\*.qlplugin
 ./scripts/install-dev.ps1      # build, install into the local QuickLook and restart it
 ```
-
-To try the preview handler from a build, run
-`src\DuckDbViewer.PreviewHandler\bin\Release\net8.0-windows\win-x64\DuckDbViewer.PreviewHandler.exe --register`.
-Stop the `DuckDbViewer.PreviewHandler` process before rebuilding, because Windows keeps the
-running previewer's files locked.
 
 The first build downloads the DuckDB extensions for the pinned DuckDB version into
 `artifacts\extensions\` (see `scripts/fetch-extensions.ps1`).
@@ -145,34 +110,24 @@ Add `--screenshot out.png` to render the panel off-screen to an image and exit. 
 ## Project layout
 
 ```
-src/
-  DuckDbViewer.Core/               Everything shared by both hosts (net472 and net8.0)
-    Detection/                     Which files are accepted, decided by magic bytes
-    Data/                          DuckDB session, row queries (filter, sort, page, export)
-    Formats/                       One class per file format; bundled DuckDB extensions
-    ViewModels/                    Preview state, background loading, cancellation, paging
-    Views/                         XAML panel and styles
-    Localization/                  Translations.config lookup
-  QuickLook.Plugin.DuckDbViewer/   QuickLook host: Plugin.cs (IViewer) and assembly loading
-  DuckDbViewer.PreviewHandler/     Explorer / Peek host: COM server, registration
-tests/                             xUnit tests for everything below the XAML, on both runtimes
-tools/                             Development host
-scripts/                           Packaging, local install, extension download
+src/QuickLook.Plugin.DuckDbViewer/
+  Plugin.cs          QuickLook entry point (IViewer); the only public type, no logic
+  Detection/         Which files the plugin accepts, decided by magic bytes
+  Data/              DuckDB session, row queries (filter, sort, page, export), SQL escaping
+  Formats/           One class per file format
+  ViewModels/        Preview state, background loading, cancellation, paging, filter editor
+  Views/             XAML panel and styles
+  Localization/      Translations.config lookup
+  Native/            Loading the native engine and private dependencies in the host
+tests/               xUnit tests for everything below the XAML
+tools/               Development host
+scripts/             Packaging, local install, extension download
 ```
 
 `Detection`, `Data` and `Formats` have no UI dependencies. The view layer talks to them
-only through `Data/PreviewDocument`, and a host only creates `Views/ViewerPanel`. The panel
-takes its colours from three resources the host supplies (see `Views/HostTheme`).
-
-The preview handler is a COM local server written in .NET, without a native shim: the host
-starts `DuckDbViewer.PreviewHandler.exe -Embedding`, asks its class factory for a handler and
-drives it through the shell's `IPreviewHandler` protocol. The handler shows the panel in a
-child window of the host's window. COM delivers those calls on arbitrary threads, so the
-handler forwards each to its single UI thread.
+only through `Data/PreviewDocument`.
 
 ### Adding a format
-
-All paths are inside `src/DuckDbViewer.Core`.
 
 1. Add a value to `Detection/FileFormat` and teach `FormatDetector` its extensions and
    magic bytes.

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- Overridden by the release workflow with the version from the git tag. -->
-    <Version>0.3.0</Version>
+    <Version>0.2.0</Version>
     <Authors>Ahmed Aredah</Authors>
     <Product>QuickLook.Plugin.DuckDbViewer</Product>
     <Copyright>Copyright © Ahmed Aredah</Copyright>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <!-- The bundled DuckDB engine is x64 only. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>QuickLook.Plugin.DuckDbViewer.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- The plugin does not ship QuickLook.Common (the host provides it); tests need it at runtime. -->
+    <PackageReference Include="QuickLook.Common" Version="$(QuickLookCommonVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shadow copying is off so the plugin finds the native engine and extensions next to its assembly. -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Sample files written by other implementations; see Fixtures\generate.py. -->
+    <None Include="Fixtures\*" Exclude="Fixtures\*.py" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\QuickLook.Plugin.DuckDbViewer\QuickLook.Plugin.DuckDbViewer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -16,9 +16,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            9.0.x
+          dotnet-version: 9.0.x
 
       - name: Test
         run: dotnet test QuickLook.Plugin.DuckDbViewer.sln -c Release --nologo
@@ -34,4 +32,4 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create '${{ github.ref_name }}' (Get-ChildItem artifacts/*.qlplugin, artifacts/*.zip) --generate-notes
+        run: gh release create '${{ github.ref_name }}' (Get-ChildItem artifacts/*.qlplugin) --generate-notes

@@ -1,14 +1,10 @@
 <#
 .SYNOPSIS
-    Builds and packages both hosts under artifacts\: the QuickLook plugin (.qlplugin) and
-    the Windows preview handler for File Explorer and PowerToys Peek (.zip).
+    Builds the plugin and packages it as a .qlplugin file under artifacts\.
 
 .DESCRIPTION
     A .qlplugin is a zip archive whose root contains the plugin assembly, its dependencies
     and QuickLook.Plugin.Metadata.config. QuickLook installs it when the file is previewed.
-
-    The preview handler zip is unpacked to a permanent folder by the user, who then runs the
-    Install.cmd inside it.
 
 .PARAMETER Version
     Version to stamp into the assembly and the plugin metadata. Defaults to the version in
@@ -61,24 +57,3 @@ Remove-Item $staging -Recurse -Force
 
 $sizeMb = [math]::Round((Get-Item $package).Length / 1MB, 1)
 Write-Host "Created $package ($sizeMb MB)"
-
-# ---- Preview handler -------------------------------------------------------------------
-
-$handlerName = 'DuckDbViewer.PreviewHandler'
-$handlerProject = Join-Path $repoRoot "src\$handlerName"
-
-$publishArgs = @('publish', $handlerProject, '-c', 'Release', '-o', $staging, '--nologo', '-v', 'q')
-if ($Version) { $publishArgs += "-p:Version=$Version" }
-if ($Lite) { $publishArgs += '-p:BundleExtensions=false' }
-dotnet @publishArgs
-if ($LASTEXITCODE -ne 0) { throw 'Publishing the preview handler failed.' }
-Get-ChildItem $staging -Filter '*.pdb' -Recurse | Remove-Item -Force
-
-$handlerPackage = Join-Path $artifacts "$handlerName-$packageVersion$suffix.zip"
-if (Test-Path $handlerPackage) { Remove-Item $handlerPackage -Force }
-[System.IO.Compression.ZipFile]::CreateFromDirectory(
-    $staging, $handlerPackage, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-Remove-Item $staging -Recurse -Force
-
-$sizeMb = [math]::Round((Get-Item $handlerPackage).Length / 1MB, 1)
-Write-Host "Created $handlerPackage ($sizeMb MB)"
