@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A Windows preview handler, so the same viewer works in File Explorer's preview pane and
+  in PowerToys Peek. It is a separate download (`DuckDbViewer.PreviewHandler-x.y.z.zip`)
+  that registers itself for the current user.
+
+### Changed
+
+- The viewer's code moved into a shared `DuckDbViewer.Core` assembly used by both hosts.
+  The QuickLook plugin package now contains `DuckDbViewer.Core.dll`.
+- Tests run on .NET Framework 4.7.2 and on .NET 8.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added

@@ -2,55 +2,45 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DuckDbViewer.Views;
+using Microsoft.Win32;
 
 namespace DuckDbViewer.PreviewHandler;
 
-/// <summary>The visual tree shown for one file, independent of the COM protocol around it.</summary>
-internal interface IPreviewContent : IDisposable
+/// <summary>
+/// The visual tree shown for one file: the shared preview panel, dressed in the host's
+/// colours. Knows nothing about the COM protocol around it.
+/// </summary>
+internal sealed class PreviewContent : IDisposable
 {
-    FrameworkElement Root { get; }
+    private static readonly Color LightBackground = Color.FromRgb(0xF3, 0xF3, 0xF3);
+    private static readonly Color DarkBackground = Color.FromRgb(0x20, 0x20, 0x20);
+
+    private readonly Border _root;
+    private readonly ViewerPanel _panel;
+
+    public PreviewContent(string path)
+    {
+        _panel = new ViewerPanel();
+        _root = new Border { Child = _panel, UseLayoutRounding = true };
+        _ = _panel.Open(path, () => { });
+    }
+
+    public FrameworkElement Root => _root;
 
     /// <summary>Adopts the host's background colour, or the system theme when it gave none.</summary>
-    void ApplyTheme(Color? hostBackground);
-}
-
-internal static class PreviewContent
-{
-    // SPIKE: placeholder content proving that the host launches and embeds the handler.
-    public static IPreviewContent Create(string path) => new Placeholder(path);
-
-    private sealed class Placeholder : IPreviewContent
+    public void ApplyTheme(Color? hostBackground)
     {
-        private readonly Border _root;
-        private readonly TextBlock _text;
+        var background = hostBackground ?? (SystemUsesLightTheme() ? LightBackground : DarkBackground);
+        _root.Resources = HostTheme.Create(background);
+        _root.Background = new SolidColorBrush(background);
+    }
 
-        public Placeholder(string path)
-        {
-            _text = new TextBlock
-            {
-                Text = $"DuckDbViewer preview handler\n{path}\n.NET {Environment.Version}, process {Environment.ProcessId}",
-                FontSize = 18,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(24),
-            };
-            _root = new Border { Child = _text };
-        }
+    public void Dispose() => _panel.Dispose();
 
-        public FrameworkElement Root => _root;
-
-        public void ApplyTheme(Color? hostBackground)
-        {
-            var background = hostBackground ?? Colors.White;
-            var isDark = (background.R * 299 + background.G * 587 + background.B * 114) / 1000 < 128;
-            _root.Background = new SolidColorBrush(background);
-            _text.Foreground = isDark ? Brushes.White : Brushes.Black;
-        }
-
-        public void Dispose()
-        {
-        }
+    private static bool SystemUsesLightTheme()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        return key?.GetValue("AppsUseLightTheme") is not int value || value != 0;
     }
 }

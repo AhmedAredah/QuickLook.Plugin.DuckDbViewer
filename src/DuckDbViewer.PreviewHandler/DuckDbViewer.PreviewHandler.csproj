@@ -17,4 +17,9 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="Install.cmd;Uninstall.cmd" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\DuckDbViewer.Core\DuckDbViewer.Core.csproj" />
+  </ItemGroup>
+
 </Project>

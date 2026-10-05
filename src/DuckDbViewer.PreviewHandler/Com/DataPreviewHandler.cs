@@ -37,7 +37,7 @@ public sealed class DataPreviewHandler : IPreviewHandler, IPreviewHandlerVisuals
     private Color? _hostBackground;
     private object? _site;
     private HwndSource? _window;
-    private IPreviewContent? _content;
+    private PreviewContent? _content;
 
     internal DataPreviewHandler(ComServer server, Dispatcher ui)
     {
@@ -123,7 +123,7 @@ public sealed class DataPreviewHandler : IPreviewHandler, IPreviewHandlerVisuals
 
         try
         {
-            _content = PreviewContent.Create(_path);
+            _content = new PreviewContent(_path);
             _content.ApplyTheme(_hostBackground);
 
             _window = new HwndSource(new HwndSourceParameters("DuckDbViewer preview")

@@ -7,10 +7,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using QuickLook.Plugin.DuckDbViewer.Data;
-using QuickLook.Plugin.DuckDbViewer.Native;
-using QuickLook.Plugin.DuckDbViewer.ViewModels;
-using QuickLook.Plugin.DuckDbViewer.Views;
+using DuckDbViewer.Data;
+using DuckDbViewer;
+using DuckDbViewer.ViewModels;
+using DuckDbViewer.Views;
 
 namespace DuckDbViewer.DevHost;
 
@@ -46,8 +46,6 @@ internal static class Program
         var dark = !string.Equals(Option(args, "--theme"), "light", StringComparison.OrdinalIgnoreCase);
         var size = (Option(args, "--size") ?? "1000x680").Split('x').Select(double.Parse).ToArray();
         var screenshot = Option(args, "--screenshot");
-
-        PluginEnvironment.EnsureInitialized();
 
         var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
         app.Resources.MergedDictionaries.Add(LoadTheme(dark));

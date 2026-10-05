@@ -13,7 +13,10 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          # 9.0 builds everything; 8.0 is the runtime of the preview handler and of half the tests.
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
       - name: Test
         run: dotnet test QuickLook.Plugin.DuckDbViewer.sln -c Release --nologo
@@ -24,6 +27,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: qlplugin
-          path: artifacts/*.qlplugin
+          name: packages
+          path: |
+            artifacts/*.qlplugin
+            artifacts/*.zip
           if-no-files-found: error

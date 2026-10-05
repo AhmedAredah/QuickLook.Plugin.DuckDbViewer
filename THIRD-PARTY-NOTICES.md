@@ -1,6 +1,6 @@
 # Third-party notices
 
-The plugin package (`.qlplugin`) redistributes the following components. Their licence
+The packages (`.qlplugin` and the preview handler `.zip`) redistribute the following components. Their licence
 texts are included in the package under `licenses\` where the upstream package ships one.
 
 | Component | Use | Licence |
