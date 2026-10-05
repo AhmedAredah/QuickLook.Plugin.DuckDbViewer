@@ -25,7 +25,7 @@ public sealed class RowQueryTests : IClassFixture<SampleFiles>
         var descending = Read(Sort("amount", descending: true), Amount);
 
         Assert.Equal(new[] { "1", "2", "5", "7", "9", "10", "10", "20", "30", "100" }, ascending);
-        Assert.Equal(ascending.Reverse(), descending);
+        Assert.Equal(Enumerable.Reverse(ascending), descending);
     }
 
     [Fact]
