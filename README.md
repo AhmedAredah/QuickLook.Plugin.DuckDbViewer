@@ -1,3 +1,5 @@
+[![Github All Releases](https://img.shields.io/github/downloads/AhmedAredah/QuickLook.Plugin.DuckDbViewer/total.svg)]()
+
 # QuickLook.Plugin.DuckDbViewer
 
 A [QuickLook](https://github.com/QL-Win/QuickLook) plugin that previews data files with the
