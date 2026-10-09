@@ -1,4 +1,4 @@
-[![Github All Releases](https://img.shields.io/github/downloads/AhmedAredah/QuickLook.Plugin.DuckDbViewer/total.svg)]()
+[![Github All Releases](https://img.shields.io/github/downloads/AhmedAredah/QuickLook.Plugin.DuckDbViewer/total.svg)]()  [![CI](https://github.com/AhmedAredah/QuickLook.Plugin.DuckDbViewer/actions/workflows/ci.yml/badge.svg)](https://github.com/AhmedAredah/QuickLook.Plugin.DuckDbViewer/actions/workflows/ci.yml)
 
 # QuickLook.Plugin.DuckDbViewer
 
